@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Eye, X, Trash } from 'lucide-react';
+import { Calendar, Eye, X, Trash, GitCompare, Check } from 'lucide-react';
 import { useBodyPhotos } from '@/hooks/useBodyPhotos';
 import { supabase } from '@/integrations/supabase/client';
 import { useMutation } from '@tanstack/react-query';
@@ -30,12 +30,24 @@ function useSupabaseImage(path: string | null) {
   return url;
 }
 
-function PhotoThumbnail({ photo, date, onClick, onDelete, isDeleting }: {
+function PhotoThumbnail({ 
+  photo, 
+  date, 
+  onClick, 
+  onDelete, 
+  isDeleting,
+  isSelected,
+  onToggleSelection,
+  isComparisonMode
+}: {
   photo: any;
   date: string;
   onClick: () => void;
   onDelete: () => void;
   isDeleting: boolean;
+  isSelected?: boolean;
+  onToggleSelection?: () => void;
+  isComparisonMode?: boolean;
 }) {
   const path = photo.photo_url.startsWith('http')
     ? photo.photo_url.replace('https://deoxrdicmklsgaqzsybm.supabase.co/storage/v1/object/public/patient-photos/', '')
@@ -45,11 +57,12 @@ function PhotoThumbnail({ photo, date, onClick, onDelete, isDeleting }: {
     const labels = { front: 'Frente', side: 'Lateral', back: 'Costas' };
     return labels[type as keyof typeof labels] || type;
   };
+  
   return (
     <div className="flex flex-col items-center group relative">
       <div
-        className="cursor-pointer"
-        onClick={onClick}
+        className={`cursor-pointer relative ${isSelected ? 'ring-2 ring-blue-500 ring-offset-2' : ''}`}
+        onClick={isComparisonMode ? onToggleSelection : onClick}
       >
         {thumbUrl ? (
           <img
@@ -59,6 +72,19 @@ function PhotoThumbnail({ photo, date, onClick, onDelete, isDeleting }: {
           />
         ) : (
           <div className="w-20 h-28 bg-gray-200 animate-pulse rounded" />
+        )}
+        {isComparisonMode && (
+          <div className="absolute top-1 right-1">
+            {isSelected ? (
+              <div className="bg-blue-500 text-white rounded-full p-1">
+                <Check className="h-3 w-3" />
+              </div>
+                         ) : (
+               <div className="bg-gray-300 text-gray-600 rounded-full p-1">
+                 <GitCompare className="h-3 w-3" />
+               </div>
+             )}
+          </div>
         )}
       </div>
       <div className="mt-1 flex items-center justify-center gap-2">
@@ -84,6 +110,8 @@ function PhotoThumbnail({ photo, date, onClick, onDelete, isDeleting }: {
 const BodyPhotoGallery: React.FC<BodyPhotoGalleryProps> = ({ patientId, onOpenUploader }) => {
   const { data: photos, isLoading, error, refetch } = useBodyPhotos(patientId);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+  const [comparisonMode, setComparisonMode] = useState(false);
+  const [selectedPhotos, setSelectedPhotos] = useState<string[]>([]);
 
   const deletePhoto = useMutation({
     mutationFn: async (photoId: string) => {
@@ -97,8 +125,34 @@ const BodyPhotoGallery: React.FC<BodyPhotoGalleryProps> = ({ patientId, onOpenUp
       if (selectedPhoto && photos && photos.some(p => p.id === photoId && p.photo_url === selectedPhoto)) {
         setSelectedPhoto(null);
       }
+      // Remove da seleção de comparação se estava selecionada
+      setSelectedPhotos(prev => prev.filter(id => id !== photoId));
     },
   });
+
+  const toggleComparisonMode = () => {
+    setComparisonMode(!comparisonMode);
+    if (comparisonMode) {
+      setSelectedPhotos([]);
+    }
+  };
+
+  const togglePhotoSelection = (photoId: string) => {
+    setSelectedPhotos(prev => {
+      if (prev.includes(photoId)) {
+        return prev.filter(id => id !== photoId);
+      } else if (prev.length < 2) {
+        return [...prev, photoId];
+      }
+      return prev;
+    });
+  };
+
+  const openComparison = () => {
+    if (selectedPhotos.length === 2) {
+      setSelectedPhoto('comparison');
+    }
+  };
 
   if (isLoading) {
     return (
@@ -154,6 +208,39 @@ const BodyPhotoGallery: React.FC<BodyPhotoGalleryProps> = ({ patientId, onOpenUp
 
   return (
     <div className="bg-white p-6 rounded-xl border border-gray-200 max-h-[510px] overflow-y-auto">
+      {/* Controles de comparação */}
+      <div className="flex items-center justify-between mb-4">
+        <button
+          onClick={toggleComparisonMode}
+          className={`px-4 py-2 rounded-lg transition-colors font-semibold text-sm ${
+            comparisonMode 
+              ? 'bg-blue-600 text-white hover:bg-blue-700' 
+              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+          }`}
+        >
+          <GitCompare className="h-4 w-4 inline mr-2" />
+          {comparisonMode ? 'Sair do Modo Comparação' : 'Modo Comparação'}
+        </button>
+        
+        {comparisonMode && selectedPhotos.length === 2 && (
+          <button
+            onClick={openComparison}
+            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors font-semibold text-sm"
+          >
+            <Eye className="h-4 w-4 inline mr-2" />
+            Comparar Fotos
+          </button>
+        )}
+      </div>
+
+      {comparisonMode && (
+        <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+          <p className="text-sm text-blue-800">
+            Selecione 2 fotos para comparar ({selectedPhotos.length}/2)
+          </p>
+        </div>
+      )}
+
       <div className="space-y-6">
         {Object.entries(photosByDate)
           .sort(([a], [b]) => new Date(b).getTime() - new Date(a).getTime())
@@ -178,6 +265,9 @@ const BodyPhotoGallery: React.FC<BodyPhotoGalleryProps> = ({ patientId, onOpenUp
                     }
                   }}
                   isDeleting={deletePhoto.isPending}
+                  isSelected={selectedPhotos.includes(photo.id)}
+                  onToggleSelection={() => togglePhotoSelection(photo.id)}
+                  isComparisonMode={comparisonMode}
                 />
               ))}
             </div>
@@ -186,8 +276,17 @@ const BodyPhotoGallery: React.FC<BodyPhotoGalleryProps> = ({ patientId, onOpenUp
       </div>
 
       {/* Photo modal */}
-      {selectedPhoto && (
+      {selectedPhoto && selectedPhoto !== 'comparison' && (
         <PhotoModal path={selectedPhoto} onClose={() => setSelectedPhoto(null)} />
+      )}
+
+      {/* Comparison modal */}
+      {selectedPhoto === 'comparison' && selectedPhotos.length === 2 && (
+        <ComparisonModal 
+          photoIds={selectedPhotos} 
+          photos={photos}
+          onClose={() => setSelectedPhoto(null)} 
+        />
       )}
     </div>
   );
@@ -221,6 +320,73 @@ function PhotoModal({ path, onClose }: { path: string; onClose: () => void }) {
         ) : (
           <div className="w-[300px] h-[400px] bg-gray-200 animate-pulse rounded" />
         )}
+      </div>
+    </div>
+  );
+}
+
+function ComparisonModal({ 
+  photoIds, 
+  photos, 
+  onClose 
+}: { 
+  photoIds: string[]; 
+  photos: any[];
+  onClose: () => void; 
+}) {
+  const selectedPhotos = photos.filter(photo => photoIds.includes(photo.id));
+  
+  // Fechar com ESC
+  React.useEffect(() => {
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose();
+    }
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [onClose]);
+
+  const getTypeLabel = (type: string) => {
+    const labels = { front: 'Frente', side: 'Lateral', back: 'Costas' };
+    return labels[type as keyof typeof labels] || type;
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+      <div className="relative max-w-6xl max-h-full">
+        <button
+          onClick={onClose}
+          className="absolute -top-12 right-0 text-white hover:text-gray-300 transition-colors"
+        >
+          <X className="h-8 w-8" />
+        </button>
+        
+        <div className="grid grid-cols-2 gap-8">
+          {selectedPhotos.map((photo, index) => {
+            const path = photo.photo_url.startsWith('http')
+              ? photo.photo_url.replace('https://deoxrdicmklsgaqzsybm.supabase.co/storage/v1/object/public/patient-photos/', '')
+              : photo.photo_url;
+            const url = useSupabaseImage(path);
+            
+            return (
+              <div key={photo.id} className="flex flex-col items-center">
+                <div className="mb-4 text-center">
+                  <h3 className="text-lg font-semibold text-white mb-2">
+                    {getTypeLabel(photo.photo_type)} - {formatDateBR(photo.photo_date)}
+                  </h3>
+                </div>
+                {url ? (
+                  <img
+                    src={url}
+                    alt={`Comparação ${index + 1}`}
+                    className="max-w-full max-h-[600px] object-contain rounded-lg"
+                  />
+                ) : (
+                  <div className="w-[300px] h-[400px] bg-gray-200 animate-pulse rounded" />
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
