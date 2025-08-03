@@ -700,27 +700,58 @@ const PatientProfile = () => {
           {scaleMeasurements.length > 1 && (
             <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100 mt-6">
               <h2 className="text-lg font-semibold text-gray-800 mb-4">Comparação Gorduras x Músculos (kg)</h2>
-              {/* Novo seletor de datas duplo, modelo igual ao card de medições */}
+                            {/* Seletor de datas para comparação */}
               <div className="w-full flex flex-col items-center my-4">
+                <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+                  <p className="text-sm text-blue-800 text-center">
+                    Selecione 2 datas para comparar. Clique em uma data para selecionar/deselecionar.
+                  </p>
+                </div>
+
                 <div className="flex flex-row items-center gap-2 overflow-x-auto pb-2">
                   {scaleMeasurements.map((m, idx) => (
                     <button
                       key={m.id + '-compare'}
-                      className={`flex flex-col items-center focus:outline-none ${selectedCompareIndex1 === idx ? 'text-[#fdba74] font-bold' : selectedCompareIndex2 === idx ? 'text-[#a78bfa] font-bold' : 'text-gray-600'}`}
+                      className={`flex flex-col items-center focus:outline-none transition-colors ${
+                        selectedCompareIndex1 === idx ? 'text-[#fdba74] font-bold' : 
+                        selectedCompareIndex2 === idx ? 'text-[#a78bfa] font-bold' : 
+                        'text-gray-600 hover:text-gray-800'
+                      }`}
                       onClick={() => {
-                        if (selectedCompareIndex2 === idx) return;
-                        setSelectedCompareIndex1(idx);
+                        // Seleção livre: alterna entre as duas seleções
+                        if (selectedCompareIndex1 === idx) {
+                          setSelectedCompareIndex1(-1); // Deseleciona
+                        } else if (selectedCompareIndex2 === idx) {
+                          setSelectedCompareIndex2(-1); // Deseleciona
+                        } else if (selectedCompareIndex1 === -1) {
+                          setSelectedCompareIndex1(idx);
+                        } else if (selectedCompareIndex2 === -1) {
+                          setSelectedCompareIndex2(idx);
+                        } else {
+                          // Se ambas estão selecionadas, substitui a primeira
+                          setSelectedCompareIndex1(idx);
+                        }
                       }}
                       onContextMenu={e => {
                         e.preventDefault();
-                        if (selectedCompareIndex1 === idx) return;
-                        setSelectedCompareIndex2(idx);
+                        // Clique direito também seleciona
+                        if (selectedCompareIndex1 === idx) {
+                          setSelectedCompareIndex1(-1);
+                        } else if (selectedCompareIndex2 === idx) {
+                          setSelectedCompareIndex2(-1);
+                        } else if (selectedCompareIndex1 === -1) {
+                          setSelectedCompareIndex1(idx);
+                        } else if (selectedCompareIndex2 === -1) {
+                          setSelectedCompareIndex2(idx);
+                        } else {
+                          setSelectedCompareIndex2(idx);
+                        }
                       }}
                     >
-                      <div className={`w-4 h-4 rounded-full mb-1 border-2
+                      <div className={`w-4 h-4 rounded-full mb-1 border-2 transition-colors
                         ${selectedCompareIndex1 === idx ? 'bg-[#fdba74] border-[#fdba74]' :
                           selectedCompareIndex2 === idx ? 'bg-[#a78bfa] border-[#a78bfa]' :
-                          'bg-gray-300 border-gray-400'}`}></div>
+                          'bg-gray-300 border-gray-400 hover:border-gray-500'}`}></div>
                       <span className="text-xs whitespace-nowrap">{m.timestamp ? new Date(m.timestamp).toLocaleDateString('pt-BR') : '-'}</span>
                     </button>
                   ))}
@@ -728,19 +759,20 @@ const PatientProfile = () => {
                 <div className="w-full h-px bg-gray-200 mt-1" />
                 <div className="text-xs text-gray-500 mt-1 text-center">
                   <span className="mr-2"><span className="inline-block w-3 h-3 rounded-full bg-[#fdba74] border border-[#fdba74] align-middle mr-1"></span>1ª Seleção</span>
-                  <span><span className="inline-block w-3 h-3 rounded-full bg-[#a78bfa] border border-[#a78bfa] align-middle mr-1"></span>2ª Seleção (clique direito)</span>
+                  <span><span className="inline-block w-3 h-3 rounded-full bg-[#a78bfa] border border-[#a78bfa] align-middle mr-1"></span>2ª Seleção</span>
                 </div>
               </div>
               {/* Gráficos lado a lado */}
-              <div className="flex flex-col md:flex-row gap-8 w-full">
+              {selectedCompareIndex1 >= 0 && selectedCompareIndex2 >= 0 ? (
+                <div className="flex flex-col md:flex-row gap-8 w-full">
                 {/* Gráfico de Gorduras */}
                 <div className="flex-1 min-w-0">
                   <h3 className="text-base font-semibold text-orange-600 mb-2 text-center">Gorduras</h3>
                   <ResponsiveContainer width="100%" height={320}>
                     <BarChart
                       data={(() => {
-                        const m1 = scaleMeasurements[selectedCompareIndex1];
-                        const m2 = scaleMeasurements[selectedCompareIndex2];
+                        const m1 = selectedCompareIndex1 >= 0 ? scaleMeasurements[selectedCompareIndex1] : null;
+                        const m2 = selectedCompareIndex2 >= 0 ? scaleMeasurements[selectedCompareIndex2] : null;
                         if (!m1 || !m2) return [];
                         return [
                           {
@@ -805,8 +837,8 @@ const PatientProfile = () => {
                   <ResponsiveContainer width="100%" height={320}>
                     <BarChart
                       data={(() => {
-                        const m1 = scaleMeasurements[selectedCompareIndex1];
-                        const m2 = scaleMeasurements[selectedCompareIndex2];
+                        const m1 = selectedCompareIndex1 >= 0 ? scaleMeasurements[selectedCompareIndex1] : null;
+                        const m2 = selectedCompareIndex2 >= 0 ? scaleMeasurements[selectedCompareIndex2] : null;
                         if (!m1 || !m2) return [];
                         return [
                           {
@@ -866,6 +898,12 @@ const PatientProfile = () => {
                   </ResponsiveContainer>
                 </div>
               </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <p className="text-lg mb-2">Selecione duas datas para comparar</p>
+                  <p className="text-sm">Use o seletor acima para escolher quais medições comparar</p>
+                </div>
+              )}
             </div>
           )}
       {/* Body Photos Section */}
