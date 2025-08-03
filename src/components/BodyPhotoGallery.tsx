@@ -196,6 +196,16 @@ const BodyPhotoGallery: React.FC<BodyPhotoGalleryProps> = ({ patientId, onOpenUp
     );
   }
 
+  // Função para ordenar fotos por tipo (frente, lateral, costas)
+  const sortPhotosByType = (photos: any[]) => {
+    const typeOrder = { front: 1, side: 2, back: 3 };
+    return photos.sort((a, b) => {
+      const orderA = typeOrder[a.photo_type as keyof typeof typeOrder] || 999;
+      const orderB = typeOrder[b.photo_type as keyof typeof typeOrder] || 999;
+      return orderA - orderB;
+    });
+  };
+
   // Group photos by date
   const photosByDate = photos.reduce((acc, photo) => {
     const date = photo.photo_date;
@@ -205,6 +215,11 @@ const BodyPhotoGallery: React.FC<BodyPhotoGalleryProps> = ({ patientId, onOpenUp
     acc[date].push(photo);
     return acc;
   }, {} as Record<string, typeof photos>);
+
+  // Ordenar fotos por tipo em cada data
+  Object.keys(photosByDate).forEach(date => {
+    photosByDate[date] = sortPhotosByType(photosByDate[date]);
+  });
 
   return (
     <div className="bg-white p-6 rounded-xl border border-gray-200 max-h-[510px] overflow-y-auto">
