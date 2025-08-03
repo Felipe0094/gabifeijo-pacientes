@@ -699,7 +699,7 @@ const PatientProfile = () => {
           {/* Gráfico de barras verticais simples para comparar última e penúltima medição */}
           {scaleMeasurements.length > 1 && (
             <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100 mt-6">
-              <h2 className="text-lg font-semibold text-gray-800 mb-4">Comparação Gorduras x Músculos (kg)</h2>
+              <h2 className="text-lg font-semibold text-gray-800 mb-4">Comparação de Gorduras e Músculos (kg)</h2>
                             {/* Seletor de datas para comparação */}
               <div className="w-full flex flex-col items-center my-4">
                 <div className="mb-4 p-3 bg-blue-50 rounded-lg">
@@ -767,7 +767,7 @@ const PatientProfile = () => {
                 <div className="flex flex-col md:flex-row gap-8 w-full">
                 {/* Gráfico de Gorduras */}
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-base font-semibold text-orange-600 mb-2 text-center">Gorduras</h3>
+                  <h3 className="text-base font-semibold text-orange-600 mb-2 text-center">Comparação de Gorduras</h3>
                   <ResponsiveContainer width="100%" height={320}>
                     <BarChart
                       data={(() => {
@@ -777,33 +777,33 @@ const PatientProfile = () => {
                         return [
                           {
                             name: 'Gordura Total',
-                            last: Number(m1.weight) * Number(m1.body_fat_percent) / 100,
-                            prev: Number(m2.weight) * Number(m2.body_fat_percent) / 100,
+                            data1: Number(m1.weight) * Number(m1.body_fat_percent) / 100,
+                            data2: Number(m2.weight) * Number(m2.body_fat_percent) / 100,
                           },
                           {
-                            name: 'Gord. Braço Dir.',
-                            last: Number(m1.weight) * Number(m1.fat_arm_right) / 100,
-                            prev: Number(m2.weight) * Number(m2.fat_arm_right) / 100,
+                            name: 'Braço Direito',
+                            data1: Number(m1.weight) * Number(m1.fat_arm_right) / 100,
+                            data2: Number(m2.weight) * Number(m2.fat_arm_right) / 100,
                           },
                           {
-                            name: 'Gord. Braço Esq.',
-                            last: Number(m1.weight) * Number(m1.fat_arm_left) / 100,
-                            prev: Number(m2.weight) * Number(m2.fat_arm_left) / 100,
+                            name: 'Braço Esquerdo',
+                            data1: Number(m1.weight) * Number(m1.fat_arm_left) / 100,
+                            data2: Number(m2.weight) * Number(m2.fat_arm_left) / 100,
                           },
                           {
-                            name: 'Gord. Perna Dir.',
-                            last: Number(m1.weight) * Number(m1.fat_leg_right) / 100,
-                            prev: Number(m2.weight) * Number(m2.fat_leg_right) / 100,
+                            name: 'Perna Direita',
+                            data1: Number(m1.weight) * Number(m1.fat_leg_right) / 100,
+                            data2: Number(m2.weight) * Number(m2.fat_leg_right) / 100,
                           },
                           {
-                            name: 'Gord. Perna Esq.',
-                            last: Number(m1.weight) * Number(m1.fat_leg_left) / 100,
-                            prev: Number(m2.weight) * Number(m2.fat_leg_left) / 100,
+                            name: 'Perna Esquerda',
+                            data1: Number(m1.weight) * Number(m1.fat_leg_left) / 100,
+                            data2: Number(m2.weight) * Number(m2.fat_leg_left) / 100,
                           },
                           {
-                            name: 'Gord. Tronco',
-                            last: Number(m1.weight) * Number(m1.fat_trunk) / 100,
-                            prev: Number(m2.weight) * Number(m2.fat_trunk) / 100,
+                            name: 'Tronco',
+                            data1: Number(m1.weight) * Number(m1.fat_trunk) / 100,
+                            data2: Number(m2.weight) * Number(m2.fat_trunk) / 100,
                           },
                         ];
                       })()}
@@ -814,26 +814,30 @@ const PatientProfile = () => {
                       <YAxis />
                       <Tooltip content={({ active, payload, label }) => {
                         if (!active || !payload || payload.length < 2) return null;
-                        const last = Number(payload.find(p => p.dataKey === 'last')?.value ?? 0);
-                        const prev = Number(payload.find(p => p.dataKey === 'prev')?.value ?? 0);
-                        const diff = last - prev;
+                        const data1 = Number(payload.find(p => p.dataKey === 'data1')?.value ?? 0);
+                        const data2 = Number(payload.find(p => p.dataKey === 'data2')?.value ?? 0);
+                        const diff = data1 - data2;
+                        const m1 = selectedCompareIndex1 >= 0 ? scaleMeasurements[selectedCompareIndex1] : null;
+                        const m2 = selectedCompareIndex2 >= 0 ? scaleMeasurements[selectedCompareIndex2] : null;
+                        const date1 = m1?.timestamp ? new Date(m1.timestamp).toLocaleDateString('pt-BR') : '';
+                        const date2 = m2?.timestamp ? new Date(m2.timestamp).toLocaleDateString('pt-BR') : '';
                         return (
                           <div className="bg-white p-2 rounded shadow text-xs">
                             <div className="font-bold mb-1">{label}</div>
-                            <div>1ª: <span className="font-mono">{last.toFixed(1)} kg</span></div>
-                            <div>2ª: <span className="font-mono">{prev.toFixed(1)} kg</span></div>
-                            <div>Diferença: <span className={diff > 0 ? 'text-green-600 font-bold' : diff < 0 ? 'text-red-600 font-bold' : ''}>{diff > 0 ? '+' : ''}{diff.toFixed(1)} kg</span></div>
+                            <div>{date1}: <span className="font-mono">{data1.toFixed(1)} kg</span></div>
+                            <div>{date2}: <span className="font-mono">{data2.toFixed(1)} kg</span></div>
+                            <div>Diferença: <span className={diff > 0 ? 'text-red-600 font-bold' : diff < 0 ? 'text-green-600 font-bold' : ''}>{diff > 0 ? '+' : ''}{diff.toFixed(1)} kg</span></div>
                           </div>
                         );
                       }} />
-                      <Bar dataKey="prev" name="2ª" fill="#fdba74" barSize={32} isAnimationActive={false} />
-                      <Bar dataKey="last" name="1ª" fill="#a78bfa" barSize={32} isAnimationActive={false} />
+                      <Bar dataKey="data2" name="2ª Data" fill="#a78bfa" barSize={32} isAnimationActive={false} />
+                      <Bar dataKey="data1" name="1ª Data" fill="#fdba74" barSize={32} isAnimationActive={false} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
                 {/* Gráfico de Músculos */}
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-base font-semibold text-purple-600 mb-2 text-center">Músculos</h3>
+                  <h3 className="text-base font-semibold text-purple-600 mb-2 text-center">Comparação de Músculos</h3>
                   <ResponsiveContainer width="100%" height={320}>
                     <BarChart
                       data={(() => {
@@ -843,33 +847,33 @@ const PatientProfile = () => {
                         return [
                           {
                             name: 'Músculo Total',
-                            last: Number(m1.weight) * Number(m1.muscle_mass_percent_total) / 100,
-                            prev: Number(m2.weight) * Number(m2.muscle_mass_percent_total) / 100,
+                            data1: Number(m1.weight) * Number(m1.muscle_mass_percent_total) / 100,
+                            data2: Number(m2.weight) * Number(m2.muscle_mass_percent_total) / 100,
                           },
                           {
-                            name: 'Musc. Braço Dir.',
-                            last: Number(m1.weight) * Number(m1.muscle_arm_right) / 100,
-                            prev: Number(m2.weight) * Number(m2.muscle_arm_right) / 100,
+                            name: 'Braço Direito',
+                            data1: Number(m1.weight) * Number(m1.muscle_arm_right) / 100,
+                            data2: Number(m2.weight) * Number(m2.muscle_arm_right) / 100,
                           },
                           {
-                            name: 'Musc. Braço Esq.',
-                            last: Number(m1.weight) * Number(m1.muscle_arm_left) / 100,
-                            prev: Number(m2.weight) * Number(m2.muscle_arm_left) / 100,
+                            name: 'Braço Esquerdo',
+                            data1: Number(m1.weight) * Number(m1.muscle_arm_left) / 100,
+                            data2: Number(m2.weight) * Number(m2.muscle_arm_left) / 100,
                           },
                           {
-                            name: 'Musc. Perna Dir.',
-                            last: Number(m1.weight) * Number(m1.muscle_leg_right) / 100,
-                            prev: Number(m2.weight) * Number(m2.muscle_leg_right) / 100,
+                            name: 'Perna Direita',
+                            data1: Number(m1.weight) * Number(m1.muscle_leg_right) / 100,
+                            data2: Number(m2.weight) * Number(m2.muscle_leg_right) / 100,
                           },
                           {
-                            name: 'Musc. Perna Esq.',
-                            last: Number(m1.weight) * Number(m1.muscle_leg_left) / 100,
-                            prev: Number(m2.weight) * Number(m2.muscle_leg_left) / 100,
+                            name: 'Perna Esquerda',
+                            data1: Number(m1.weight) * Number(m1.muscle_leg_left) / 100,
+                            data2: Number(m2.weight) * Number(m2.muscle_leg_left) / 100,
                           },
                           {
-                            name: 'Musc. Tronco',
-                            last: Number(m1.weight) * Number(m1.muscle_trunk) / 100,
-                            prev: Number(m2.weight) * Number(m2.muscle_trunk) / 100,
+                            name: 'Tronco',
+                            data1: Number(m1.weight) * Number(m1.muscle_trunk) / 100,
+                            data2: Number(m2.weight) * Number(m2.muscle_trunk) / 100,
                           },
                         ];
                       })()}
@@ -880,20 +884,24 @@ const PatientProfile = () => {
                       <YAxis />
                       <Tooltip content={({ active, payload, label }) => {
                         if (!active || !payload || payload.length < 2) return null;
-                        const last = Number(payload.find(p => p.dataKey === 'last')?.value ?? 0);
-                        const prev = Number(payload.find(p => p.dataKey === 'prev')?.value ?? 0);
-                        const diff = last - prev;
+                        const data1 = Number(payload.find(p => p.dataKey === 'data1')?.value ?? 0);
+                        const data2 = Number(payload.find(p => p.dataKey === 'data2')?.value ?? 0);
+                        const diff = data1 - data2;
+                        const m1 = selectedCompareIndex1 >= 0 ? scaleMeasurements[selectedCompareIndex1] : null;
+                        const m2 = selectedCompareIndex2 >= 0 ? scaleMeasurements[selectedCompareIndex2] : null;
+                        const date1 = m1?.timestamp ? new Date(m1.timestamp).toLocaleDateString('pt-BR') : '';
+                        const date2 = m2?.timestamp ? new Date(m2.timestamp).toLocaleDateString('pt-BR') : '';
                         return (
                           <div className="bg-white p-2 rounded shadow text-xs">
                             <div className="font-bold mb-1">{label}</div>
-                            <div>1ª: <span className="font-mono">{last.toFixed(1)} kg</span></div>
-                            <div>2ª: <span className="font-mono">{prev.toFixed(1)} kg</span></div>
+                            <div>{date1}: <span className="font-mono">{data1.toFixed(1)} kg</span></div>
+                            <div>{date2}: <span className="font-mono">{data2.toFixed(1)} kg</span></div>
                             <div>Diferença: <span className={diff > 0 ? 'text-green-600 font-bold' : diff < 0 ? 'text-red-600 font-bold' : ''}>{diff > 0 ? '+' : ''}{diff.toFixed(1)} kg</span></div>
                           </div>
                         );
                       }} />
-                      <Bar dataKey="prev" name="2ª" fill="#fdba74" barSize={32} isAnimationActive={false} />
-                      <Bar dataKey="last" name="1ª" fill="#a78bfa" barSize={32} isAnimationActive={false} />
+                      <Bar dataKey="data2" name="2ª Data" fill="#a78bfa" barSize={32} isAnimationActive={false} />
+                      <Bar dataKey="data1" name="1ª Data" fill="#fdba74" barSize={32} isAnimationActive={false} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
