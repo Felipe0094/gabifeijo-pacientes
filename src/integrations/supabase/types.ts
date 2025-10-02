@@ -184,55 +184,58 @@ export type Database = {
       }
       manual_measurements: {
         Row: {
-          abdomen_cm: number | null
-          bmi: number | null
-          body_fat_percent: number | null
-          created_at: string
-          hip_cm: number | null
           id: string
-          measurement_date: string
-          muscle_mass_percent: number | null
-          notes: string | null
           patient_id: string
-          updated_at: string
-          visceral_fat_rating: number | null
+          timestamp: string
           waist_cm: number | null
-          water_percent: number | null
-          weight_kg: number | null
+          abdomen_cm: number | null
+          arm_right_cm: number | null
+          arm_left_cm: number | null
+          thorax_cm: number | null
+          thigh_right_cm: number | null
+          thigh_left_cm: number | null
+          calf_right_cm: number | null
+          calf_left_cm: number | null
+          hip_cm: number | null
+          notes: string | null
+          created_at: string
+          updated_at: string
         }
         Insert: {
-          abdomen_cm?: number | null
-          bmi?: number | null
-          body_fat_percent?: number | null
-          created_at?: string
-          hip_cm?: number | null
           id?: string
-          measurement_date: string
-          muscle_mass_percent?: number | null
-          notes?: string | null
           patient_id: string
-          updated_at?: string
-          visceral_fat_rating?: number | null
+          timestamp?: string
           waist_cm?: number | null
-          water_percent?: number | null
-          weight_kg?: number | null
+          abdomen_cm?: number | null
+          arm_right_cm?: number | null
+          arm_left_cm?: number | null
+          thorax_cm?: number | null
+          thigh_right_cm?: number | null
+          thigh_left_cm?: number | null
+          calf_right_cm?: number | null
+          calf_left_cm?: number | null
+          hip_cm?: number | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
         }
         Update: {
-          abdomen_cm?: number | null
-          bmi?: number | null
-          body_fat_percent?: number | null
-          created_at?: string
-          hip_cm?: number | null
           id?: string
-          measurement_date?: string
-          muscle_mass_percent?: number | null
-          notes?: string | null
           patient_id?: string
-          updated_at?: string
-          visceral_fat_rating?: number | null
+          timestamp?: string
           waist_cm?: number | null
-          water_percent?: number | null
-          weight_kg?: number | null
+          abdomen_cm?: number | null
+          arm_right_cm?: number | null
+          arm_left_cm?: number | null
+          thorax_cm?: number | null
+          thigh_right_cm?: number | null
+          thigh_left_cm?: number | null
+          calf_right_cm?: number | null
+          calf_left_cm?: number | null
+          hip_cm?: number | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
         }
         Relationships: [
           {
@@ -350,55 +353,82 @@ export type Database = {
       }
       scale_measurements: {
         Row: {
-          abdomen_cm: number | null
+          id: string
+          patient_id: string
+          timestamp: string
+          weight: number
           bmi: number | null
           body_fat_percent: number | null
-          created_at: string
-          hip_cm: number | null
-          id: string
-          measurement_date: string
-          muscle_mass_percent: number | null
-          notes: string | null
-          patient_id: string
-          updated_at: string
-          visceral_fat_rating: number | null
-          waist_cm: number | null
           water_percent: number | null
-          weight_kg: number | null
+          bone_mass_kg: number | null
+          muscle_mass_percent_total: number | null
+          fat_arm_right: number | null
+          fat_arm_left: number | null
+          fat_leg_right: number | null
+          fat_leg_left: number | null
+          fat_trunk: number | null
+          muscle_arm_right: number | null
+          muscle_arm_left: number | null
+          muscle_leg_right: number | null
+          muscle_leg_left: number | null
+          muscle_trunk: number | null
+          metabolic_age: number | null
+          daily_calorie_maintenance: number | null
+          segment_data_json: any | null
+          created_at: string
+          updated_at: string
         }
         Insert: {
-          abdomen_cm?: number | null
+          id?: string
+          patient_id: string
+          timestamp: string
+          weight: number
           bmi?: number | null
           body_fat_percent?: number | null
-          created_at?: string
-          hip_cm?: number | null
-          id?: string
-          measurement_date: string
-          muscle_mass_percent?: number | null
-          notes?: string | null
-          patient_id: string
-          updated_at?: string
-          visceral_fat_rating?: number | null
-          waist_cm?: number | null
           water_percent?: number | null
-          weight_kg?: number | null
+          bone_mass_kg?: number | null
+          muscle_mass_percent_total?: number | null
+          fat_arm_right?: number | null
+          fat_arm_left?: number | null
+          fat_leg_right?: number | null
+          fat_leg_left?: number | null
+          fat_trunk?: number | null
+          muscle_arm_right?: number | null
+          muscle_arm_left?: number | null
+          muscle_leg_right?: number | null
+          muscle_leg_left?: number | null
+          muscle_trunk?: number | null
+          metabolic_age?: number | null
+          daily_calorie_maintenance?: number | null
+          segment_data_json?: any | null
+          created_at?: string
+          updated_at?: string
         }
         Update: {
-          abdomen_cm?: number | null
+          id?: string
+          patient_id?: string
+          timestamp?: string
+          weight?: number
           bmi?: number | null
           body_fat_percent?: number | null
-          created_at?: string
-          hip_cm?: number | null
-          id?: string
-          measurement_date?: string
-          muscle_mass_percent?: number | null
-          notes?: string | null
-          patient_id?: string
-          updated_at?: string
-          visceral_fat_rating?: number | null
-          waist_cm?: number | null
           water_percent?: number | null
-          weight_kg?: number | null
+          bone_mass_kg?: number | null
+          muscle_mass_percent_total?: number | null
+          fat_arm_right?: number | null
+          fat_arm_left?: number | null
+          fat_leg_right?: number | null
+          fat_leg_left?: number | null
+          fat_trunk?: number | null
+          muscle_arm_right?: number | null
+          muscle_arm_left?: number | null
+          muscle_leg_right?: number | null
+          muscle_leg_left?: number | null
+          muscle_trunk?: number | null
+          metabolic_age?: number | null
+          daily_calorie_maintenance?: number | null
+          segment_data_json?: any | null
+          created_at?: string
+          updated_at?: string
         }
         Relationships: [
           {

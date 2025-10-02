@@ -6,11 +6,12 @@ import { useQueryClient } from '@tanstack/react-query';
 interface MeasurementFormProps {
   patientId: string;
   editingManual?: any | null;
+  editingScale?: any | null;
   onFinishEdit?: () => void;
   heightCm?: number;
 }
 
-const MeasurementForm: React.FC<MeasurementFormProps> = ({ patientId, editingManual, onFinishEdit, heightCm }) => {
+const MeasurementForm: React.FC<MeasurementFormProps> = ({ patientId, editingManual, editingScale, onFinishEdit, heightCm }) => {
   const queryClient = useQueryClient();
   const [category, setCategory] = useState<'tape' | 'bio'>('tape');
   const [formData, setFormData] = useState({
@@ -85,7 +86,44 @@ const MeasurementForm: React.FC<MeasurementFormProps> = ({ patientId, editingMan
         metabolic_age: '',
         daily_calorie_maintenance: ''
       });
+      setCategory('tape');
       setEditingId(editingManual.id || null);
+    } else if (editingScale) {
+      setFormData({
+        date: editingScale.date ? editingScale.date.split('T')[0] : '',
+        waist: '',
+        abdomen: '',
+        arm_right: '',
+        arm_left: '',
+        thorax: '',
+        hip: '',
+        thigh_right: '',
+        thigh_left: '',
+        calf_right: '',
+        calf_left: '',
+        observations: '',
+        weight: editingScale.data.weight?.toString() || '',
+        bmi: editingScale.data.bmi?.toString() || '',
+        body_fat_percent: editingScale.data.bodyFat?.toString() || '',
+        visceral_fat_rating: editingScale.data.visceralFat?.toString() || '',
+        water_percent: editingScale.data.water?.toString() || '',
+        bone_mass_kg: editingScale.data.bone?.toString() || '',
+        muscle_mass_percent_total: editingScale.data.muscle?.toString() || '',
+        fat_arm_right: editingScale.data.fat_arm_right?.toString() || '',
+        fat_arm_left: editingScale.data.fat_arm_left?.toString() || '',
+        fat_leg_right: editingScale.data.fat_leg_right?.toString() || '',
+        fat_leg_left: editingScale.data.fat_leg_left?.toString() || '',
+        fat_trunk: editingScale.data.fat_trunk?.toString() || '',
+        muscle_arm_right: editingScale.data.muscle_arm_right?.toString() || '',
+        muscle_arm_left: editingScale.data.muscle_arm_left?.toString() || '',
+        muscle_leg_right: editingScale.data.muscle_leg_right?.toString() || '',
+        muscle_leg_left: editingScale.data.muscle_leg_left?.toString() || '',
+        muscle_trunk: editingScale.data.muscle_trunk?.toString() || '',
+        metabolic_age: editingScale.data.metabolic_age?.toString() || '',
+        daily_calorie_maintenance: editingScale.data.daily_calorie_maintenance?.toString() || ''
+      });
+      setCategory('bio');
+      setEditingId(editingScale.id || null);
     } else {
       setFormData({
         date: new Date().toISOString().split('T')[0],
@@ -122,19 +160,18 @@ const MeasurementForm: React.FC<MeasurementFormProps> = ({ patientId, editingMan
       });
       setEditingId(null);
     }
-  }, [editingManual]);
+  }, [editingManual, editingScale]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (category === 'tape') {
-      const { data: existingMeasurements } = await supabase
+      const { data: existingMeasurement } = await supabase
         .from('manual_measurements')
         .select('id')
         .eq('patient_id', patientId)
-        .eq('timestamp', formData.date);
-
-      const existingMeasurement = existingMeasurements?.[0];
+        .eq('timestamp', formData.date)
+        .maybeSingle();
 
       const insertData = {
         patient_id: patientId,
@@ -161,7 +198,9 @@ const MeasurementForm: React.FC<MeasurementFormProps> = ({ patientId, editingMan
       } else {
         ({ error } = await supabase
           .from('manual_measurements')
-          .insert([insertData]));
+          .insert(insertData)
+          .select()
+          .single());
       }
 
       if (error) {
@@ -195,9 +234,19 @@ const MeasurementForm: React.FC<MeasurementFormProps> = ({ patientId, editingMan
         daily_calorie_maintenance: formData.daily_calorie_maintenance ? Number(formData.daily_calorie_maintenance) : null,
       };
 
-      const { error } = await supabase
-        .from('scale_measurements')
-        .insert([scaleData]);
+      let error;
+      if (editingId) {
+        ({ error } = await supabase
+          .from('scale_measurements')
+          .update(scaleData)
+          .eq('id', editingId));
+      } else {
+        ({ error } = await supabase
+          .from('scale_measurements')
+          .insert(scaleData)
+          .select()
+          .single());
+      }
 
       if (error) {
         alert('Erro ao salvar bioimpedância: ' + error.message);

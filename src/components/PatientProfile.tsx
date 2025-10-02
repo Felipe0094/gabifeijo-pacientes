@@ -724,7 +724,7 @@ const PatientProfile = () => {
                 <div>Gordura Braço Esq.</div>
                 <div>
                   {selectedMeasurement?.fat_arm_left != null
-                    ? `${Number(selectedMeasurement.fat_arm_left)}%${selectedMeasurement?.weight != null ? ` (${(Number(selectedMeasurement.weight) * Number(selectedMeasurement.fat_arm_left) / 100).toFixed(1)} kg)` : ''}`
+                    ? `${selectedMeasurement?.muscle_arm_left != null ? `${(((Number(selectedMeasurement.muscle_arm_left)) / (1 - (Number(selectedMeasurement.fat_arm_left) / 100))) * (Number(selectedMeasurement.fat_arm_left) / 100)).toFixed(1)} kg${selectedMeasurement?.weight != null && selectedMeasurement?.body_fat_percent != null ? ` (${((((Number(selectedMeasurement.muscle_arm_left)) / (1 - (Number(selectedMeasurement.fat_arm_left) / 100))) * (Number(selectedMeasurement.fat_arm_left) / 100)) / (Number(selectedMeasurement.weight) * Number(selectedMeasurement.body_fat_percent) / 100) * 100).toFixed(1)}%)` : ''}` : '-'}`
                     : '-'}
                 </div>
                 <div className="text-[10px] md:text-xs font-medium text-orange-700">Classificação: {classifyFatSegmentPercent('arm', selectedMeasurement?.fat_arm_left != null ? Number(selectedMeasurement.fat_arm_left) : undefined, patient?.gender)}</div>
@@ -734,7 +734,7 @@ const PatientProfile = () => {
                 <div>Gordura Braço Dir.</div>
                 <div>
                   {selectedMeasurement?.fat_arm_right != null
-                    ? `${Number(selectedMeasurement.fat_arm_right)}%${selectedMeasurement?.weight != null ? ` (${(Number(selectedMeasurement.weight) * Number(selectedMeasurement.fat_arm_right) / 100).toFixed(1)} kg)` : ''}`
+                    ? `${selectedMeasurement?.muscle_arm_right != null ? `${(((Number(selectedMeasurement.muscle_arm_right)) / (1 - (Number(selectedMeasurement.fat_arm_right) / 100))) * (Number(selectedMeasurement.fat_arm_right) / 100)).toFixed(1)} kg${selectedMeasurement?.weight != null && selectedMeasurement?.body_fat_percent != null ? ` (${((((Number(selectedMeasurement.muscle_arm_right)) / (1 - (Number(selectedMeasurement.fat_arm_right) / 100))) * (Number(selectedMeasurement.fat_arm_right) / 100)) / (Number(selectedMeasurement.weight) * Number(selectedMeasurement.body_fat_percent) / 100) * 100).toFixed(1)}%)` : ''}` : '-'}`
                     : '-'}
                 </div>
                 <div className="text-[10px] md:text-xs font-medium text-orange-700">Classificação: {classifyFatSegmentPercent('arm', selectedMeasurement?.fat_arm_right != null ? Number(selectedMeasurement.fat_arm_right) : undefined, patient?.gender)}</div>
@@ -744,7 +744,7 @@ const PatientProfile = () => {
                 <div>Gordura Perna Esq.</div>
                 <div>
                   {selectedMeasurement?.fat_leg_left != null
-                    ? `${Number(selectedMeasurement.fat_leg_left)}%${selectedMeasurement?.weight != null ? ` (${(Number(selectedMeasurement.weight) * Number(selectedMeasurement.fat_leg_left) / 100).toFixed(1)} kg)` : ''}`
+                    ? `${selectedMeasurement?.muscle_leg_left != null ? `${(((Number(selectedMeasurement.muscle_leg_left)) / (1 - (Number(selectedMeasurement.fat_leg_left) / 100))) * (Number(selectedMeasurement.fat_leg_left) / 100)).toFixed(1)} kg${selectedMeasurement?.weight != null && selectedMeasurement?.body_fat_percent != null ? ` (${((((Number(selectedMeasurement.muscle_leg_left)) / (1 - (Number(selectedMeasurement.fat_leg_left) / 100))) * (Number(selectedMeasurement.fat_leg_left) / 100)) / (Number(selectedMeasurement.weight) * Number(selectedMeasurement.body_fat_percent) / 100) * 100).toFixed(1)}%)` : ''}` : '-'}`
                     : '-'}
                 </div>
                 <div className="text-[10px] md:text-xs font-medium text-orange-700">Classificação: {classifyFatSegmentPercent('leg', selectedMeasurement?.fat_leg_left != null ? Number(selectedMeasurement.fat_leg_left) : undefined, patient?.gender)}</div>
@@ -754,7 +754,7 @@ const PatientProfile = () => {
                 <div>Gordura Perna Dir.</div>
                 <div>
                   {selectedMeasurement?.fat_leg_right != null
-                    ? `${Number(selectedMeasurement.fat_leg_right)}%${selectedMeasurement?.weight != null ? ` (${(Number(selectedMeasurement.weight) * Number(selectedMeasurement.fat_leg_right) / 100).toFixed(1)} kg)` : ''}`
+                    ? `${selectedMeasurement?.muscle_leg_right != null ? `${(((Number(selectedMeasurement.muscle_leg_right)) / (1 - (Number(selectedMeasurement.fat_leg_right) / 100))) * (Number(selectedMeasurement.fat_leg_right) / 100)).toFixed(1)} kg${selectedMeasurement?.weight != null && selectedMeasurement?.body_fat_percent != null ? ` (${((((Number(selectedMeasurement.muscle_leg_right)) / (1 - (Number(selectedMeasurement.fat_leg_right) / 100))) * (Number(selectedMeasurement.fat_leg_right) / 100)) / (Number(selectedMeasurement.weight) * Number(selectedMeasurement.body_fat_percent) / 100) * 100).toFixed(1)}%)` : ''}` : '-'}`
                     : '-'}
                 </div>
                 <div className="text-[10px] md:text-xs font-medium text-orange-700">Classificação: {classifyFatSegmentPercent('leg', selectedMeasurement?.fat_leg_right != null ? Number(selectedMeasurement.fat_leg_right) : undefined, patient?.gender)}</div>
@@ -764,7 +764,7 @@ const PatientProfile = () => {
                 <div>Gordura Tronco</div>
                 <div>
                   {selectedMeasurement?.fat_trunk != null
-                    ? `${Number(selectedMeasurement.fat_trunk)}%${selectedMeasurement?.weight != null ? ` (${(Number(selectedMeasurement.weight) * Number(selectedMeasurement.fat_trunk) / 100).toFixed(1)} kg)` : ''}`
+                    ? `${selectedMeasurement?.muscle_trunk != null ? `${(((Number(selectedMeasurement.muscle_trunk)) / (1 - (Number(selectedMeasurement.fat_trunk) / 100))) * (Number(selectedMeasurement.fat_trunk) / 100)).toFixed(1)} kg${selectedMeasurement?.weight != null && selectedMeasurement?.body_fat_percent != null ? ` (${((((Number(selectedMeasurement.muscle_trunk)) / (1 - (Number(selectedMeasurement.fat_trunk) / 100))) * (Number(selectedMeasurement.fat_trunk) / 100)) / (Number(selectedMeasurement.weight) * Number(selectedMeasurement.body_fat_percent) / 100) * 100).toFixed(1)}%)` : ''}` : '-'}`
                     : '-'}
                 </div>
                 <div className="text-[10px] md:text-xs font-medium text-orange-700">Classificação: {classifyFatSegmentPercent('trunk', selectedMeasurement?.fat_trunk != null ? Number(selectedMeasurement.fat_trunk) : undefined, patient?.gender)}</div>
@@ -790,50 +790,50 @@ const PatientProfile = () => {
                 <div>Músculo Braço Esq.</div>
                 <div>
                   {selectedMeasurement?.muscle_arm_left != null
-                    ? `${Number(selectedMeasurement.muscle_arm_left)}%${selectedMeasurement?.weight != null ? ` (${(Number(selectedMeasurement.weight) * Number(selectedMeasurement.muscle_arm_left) / 100).toFixed(1)} kg)` : ''}`
+                    ? `${Number(selectedMeasurement.muscle_arm_left).toFixed(1)} kg${selectedMeasurement?.weight != null && selectedMeasurement?.muscle_mass_percent_total != null ? ` (${((Number(selectedMeasurement.muscle_arm_left) / (Number(selectedMeasurement.weight) * Number(selectedMeasurement.muscle_mass_percent_total) / 100)) * 100).toFixed(1)}%)` : ''}`
                     : '-'}
                 </div>
-                <div className="text-[10px] md:text-xs font-medium text-blue-700">Classificação: {classifyMuscleSegmentKg('arm', selectedMeasurement?.weight != null && selectedMeasurement?.muscle_arm_left != null ? (Number(selectedMeasurement.weight) * Number(selectedMeasurement.muscle_arm_left) / 100) : undefined, patient?.gender)}</div>
+                <div className="text-[10px] md:text-xs font-medium text-blue-700">Classificação: {classifyMuscleSegmentKg('arm', selectedMeasurement?.muscle_arm_left != null ? Number(selectedMeasurement.muscle_arm_left) : undefined, patient?.gender)}</div>
               </div>
               {/* Top Right - Braço Dir. */}
               <div className="absolute top-2 right-2 text-right text-[#2563eb] text-xs md:text-sm font-semibold leading-tight max-w-[46%]">
                 <div>Músculo Braço Dir.</div>
                 <div>
                   {selectedMeasurement?.muscle_arm_right != null
-                    ? `${Number(selectedMeasurement.muscle_arm_right)}%${selectedMeasurement?.weight != null ? ` (${(Number(selectedMeasurement.weight) * Number(selectedMeasurement.muscle_arm_right) / 100).toFixed(1)} kg)` : ''}`
+                    ? `${Number(selectedMeasurement.muscle_arm_right).toFixed(1)} kg${selectedMeasurement?.weight != null && selectedMeasurement?.muscle_mass_percent_total != null ? ` (${((Number(selectedMeasurement.muscle_arm_right) / (Number(selectedMeasurement.weight) * Number(selectedMeasurement.muscle_mass_percent_total) / 100)) * 100).toFixed(1)}%)` : ''}`
                     : '-'}
                 </div>
-                <div className="text-[10px] md:text-xs font-medium text-blue-700">Classificação: {classifyMuscleSegmentKg('arm', selectedMeasurement?.weight != null && selectedMeasurement?.muscle_arm_right != null ? (Number(selectedMeasurement.weight) * Number(selectedMeasurement.muscle_arm_right) / 100) : undefined, patient?.gender)}</div>
+                <div className="text-[10px] md:text-xs font-medium text-blue-700">Classificação: {classifyMuscleSegmentKg('arm', selectedMeasurement?.muscle_arm_right != null ? Number(selectedMeasurement.muscle_arm_right) : undefined, patient?.gender)}</div>
               </div>
               {/* Bottom Left - Perna Esq. */}
               <div className="absolute bottom-2 left-2 text-[#2563eb] text-xs md:text-sm font-semibold leading-tight max-w-[46%]">
                 <div>Músculo Perna Esq.</div>
                 <div>
                   {selectedMeasurement?.muscle_leg_left != null
-                    ? `${Number(selectedMeasurement.muscle_leg_left)}%${selectedMeasurement?.weight != null ? ` (${(Number(selectedMeasurement.weight) * Number(selectedMeasurement.muscle_leg_left) / 100).toFixed(1)} kg)` : ''}`
+                    ? `${Number(selectedMeasurement.muscle_leg_left).toFixed(1)} kg${selectedMeasurement?.weight != null && selectedMeasurement?.muscle_mass_percent_total != null ? ` (${((Number(selectedMeasurement.muscle_leg_left) / (Number(selectedMeasurement.weight) * Number(selectedMeasurement.muscle_mass_percent_total) / 100)) * 100).toFixed(1)}%)` : ''}`
                     : '-'}
                 </div>
-                <div className="text-[10px] md:text-xs font-medium text-blue-700">Classificação: {classifyMuscleSegmentKg('leg', selectedMeasurement?.weight != null && selectedMeasurement?.muscle_leg_left != null ? (Number(selectedMeasurement.weight) * Number(selectedMeasurement.muscle_leg_left) / 100) : undefined, patient?.gender)}</div>
+                <div className="text-[10px] md:text-xs font-medium text-blue-700">Classificação: {classifyMuscleSegmentKg('leg', selectedMeasurement?.muscle_leg_left != null ? Number(selectedMeasurement.muscle_leg_left) : undefined, patient?.gender)}</div>
               </div>
               {/* Bottom Right - Perna Dir. */}
               <div className="absolute bottom-2 right-2 text-right text-[#2563eb] text-xs md:text-sm font-semibold leading-tight max-w-[46%]">
                 <div>Músculo Perna Dir.</div>
                 <div>
                   {selectedMeasurement?.muscle_leg_right != null
-                    ? `${Number(selectedMeasurement.muscle_leg_right)}%${selectedMeasurement?.weight != null ? ` (${(Number(selectedMeasurement.weight) * Number(selectedMeasurement.muscle_leg_right) / 100).toFixed(1)} kg)` : ''}`
+                    ? `${Number(selectedMeasurement.muscle_leg_right).toFixed(1)} kg${selectedMeasurement?.weight != null && selectedMeasurement?.muscle_mass_percent_total != null ? ` (${((Number(selectedMeasurement.muscle_leg_right) / (Number(selectedMeasurement.weight) * Number(selectedMeasurement.muscle_mass_percent_total) / 100)) * 100).toFixed(1)}%)` : ''}`
                     : '-'}
                 </div>
-                <div className="text-[10px] md:text-xs font-medium text-blue-700">Classificação: {classifyMuscleSegmentKg('leg', selectedMeasurement?.weight != null && selectedMeasurement?.muscle_leg_right != null ? (Number(selectedMeasurement.weight) * Number(selectedMeasurement.muscle_leg_right) / 100) : undefined, patient?.gender)}</div>
+                <div className="text-[10px] md:text-xs font-medium text-blue-700">Classificação: {classifyMuscleSegmentKg('leg', selectedMeasurement?.muscle_leg_right != null ? Number(selectedMeasurement.muscle_leg_right) : undefined, patient?.gender)}</div>
               </div>
               {/* Center - Tronco */}
               <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center text-[#2563eb] text-sm md:text-base font-semibold leading-tight">
                 <div>Músculo Tronco</div>
                 <div>
                   {selectedMeasurement?.muscle_trunk != null
-                    ? `${Number(selectedMeasurement.muscle_trunk)}%${selectedMeasurement?.weight != null ? ` (${(Number(selectedMeasurement.weight) * Number(selectedMeasurement.muscle_trunk) / 100).toFixed(1)} kg)` : ''}`
+                    ? `${Number(selectedMeasurement.muscle_trunk).toFixed(1)} kg${selectedMeasurement?.weight != null && selectedMeasurement?.muscle_mass_percent_total != null ? ` (${((Number(selectedMeasurement.muscle_trunk) / (Number(selectedMeasurement.weight) * Number(selectedMeasurement.muscle_mass_percent_total) / 100)) * 100).toFixed(1)}%)` : ''}`
                     : '-'}
                 </div>
-                <div className="text-[10px] md:text-xs font-medium text-blue-700">Classificação: {classifyMuscleSegmentKg('trunk', selectedMeasurement?.weight != null && selectedMeasurement?.muscle_trunk != null ? (Number(selectedMeasurement.weight) * Number(selectedMeasurement.muscle_trunk) / 100) : undefined, patient?.gender)}</div>
+                <div className="text-[10px] md:text-xs font-medium text-blue-700">Classificação: {classifyMuscleSegmentKg('trunk', selectedMeasurement?.muscle_trunk != null ? Number(selectedMeasurement.muscle_trunk) : undefined, patient?.gender)}</div>
               </div>
             </div>
           </div>
