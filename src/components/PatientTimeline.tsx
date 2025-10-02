@@ -194,12 +194,22 @@ const PatientTimeline: React.FC<PatientTimelineProps> = ({ measurements, onEditM
                 <p className="font-semibold text-gray-800">{measurement.data.bodyFat}%</p>
               </div>
             )}
-            {measurement.data.muscle && (
-              <div className="text-center p-2 bg-blue-50 rounded-lg">
-                <p className="text-xs text-gray-600">% Músculo</p>
-                <p className="font-semibold text-gray-800">{measurement.data.muscle}%</p>
-              </div>
-            )}
+            {(() => {
+              const segs = ['muscle_arm_left','muscle_arm_right','muscle_leg_left','muscle_leg_right','muscle_trunk'] as const;
+              const totalKg = segs
+                .map(k => Number((measurement.data as any)?.[k] ?? 0))
+                .reduce((a, b) => a + b, 0);
+              const weight = Number(measurement.data.weight ?? 0);
+              const percent = Number(measurement.data.muscle ?? 0);
+              const kg = totalKg > 0 ? totalKg : (weight > 0 && percent > 0 ? weight * percent / 100 : 0);
+              if (kg <= 0) return null;
+              return (
+                <div className="text-center p-2 bg-blue-50 rounded-lg">
+                  <p className="text-xs text-gray-600">Massa Magra Esquelética (mW)</p>
+                  <p className="font-semibold text-gray-800">{kg.toFixed(1)} KG</p>
+                </div>
+              );
+            })()}
             {measurement.data.water && (
               <div className="text-center p-2 bg-blue-50 rounded-lg">
                 <p className="text-xs text-gray-600">% Água</p>
