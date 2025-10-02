@@ -1,54 +1,86 @@
-const CACHE_NAME = 'gabi-feijo-v1';
-const urlsToCache = [
-  '/',
-  '/static/js/bundle.js',
-  '/static/css/main.css',
+const CACHE_NAME = 'gabi-feijo-v2';
+
+// Cache apenas arquivos estáticos não versionados (sem hash)
+const STATIC_ASSETS = [
+  '/favicon.png',
   '/favicon.ico',
-  '/icon-192.png',
-  '/icon-512.png',
+  '/manifest.json',
   '/apple-touch-icon.png',
-  '/manifest.json'
+  '/icon-192.png',
+  '/icon-512.png'
 ];
 
-// Install event - cache resources
 self.addEventListener('install', (event) => {
+  // Instalação rápida sem bloquear a página
+  self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => {
-        console.log('Opened cache');
-        return cache.addAll(urlsToCache);
-      })
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
   );
 });
 
-// Fetch event - serve from cache when offline
-self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        // Return cached version or fetch from network
-        if (response) {
-          return response;
-        }
-        return fetch(event.request);
-      }
-    )
-  );
-});
-
-// Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
+  // Assume imediatamente o controle e limpa caches antigos
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            console.log('Deleting old cache:', cacheName);
-            return caches.delete(cacheName);
+    (async () => {
+      const keys = await caches.keys();
+      await Promise.all(
+        keys.map((key) => {
+          if (key !== CACHE_NAME) {
+            return caches.delete(key);
           }
         })
       );
-    })
+      await self.clients.claim();
+    })()
+  );
+});
+
+self.addEventListener('fetch', (event) => {
+  const req = event.request;
+  const url = new URL(req.url);
+
+  // Navegações (HTML): strategy network-first para evitar servir index antigo
+  const isNavigationRequest =
+    req.mode === 'navigate' ||
+    (req.headers.get('accept') || '').includes('text/html');
+
+  if (isNavigationRequest) {
+    event.respondWith(
+      (async () => {
+        try {
+          // Busca sempre a versão mais recente do HTML
+          const networkResp = await fetch(req);
+          return networkResp;
+        } catch (e) {
+          // Offline: tenta cair para um HTML em cache, se existir
+          const cache = await caches.open(CACHE_NAME);
+          const cached = await cache.match('/index.html');
+          return cached || Response.error();
+        }
+      })()
+    );
+    return;
+  }
+
+  // Assets e demais requests: cache-first com atualização em segundo plano
+  event.respondWith(
+    (async () => {
+      const cache = await caches.open(CACHE_NAME);
+      const cached = await cache.match(req);
+      if (cached) {
+        // Atualiza em segundo plano
+        fetch(req).then((resp) => {
+          if (resp && resp.ok) cache.put(req, resp.clone());
+        });
+        return cached;
+      }
+      const networkResp = await fetch(req);
+      // Só cacheia respostas bem-sucedidas
+      if (networkResp && networkResp.ok && req.method === 'GET') {
+        cache.put(req, networkResp.clone());
+      }
+      return networkResp;
+    })()
   );
 });
 
