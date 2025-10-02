@@ -248,6 +248,7 @@ const PatientProfile = () => {
   // Prepare timeline data - combine both manual and scale measurements
   const combinedMeasurements = [
     ...scaleMeasurements.map(measurement => ({
+      id: measurement.id,
       date: measurement.timestamp,
       type: 'scale' as const,
       data: {
@@ -257,7 +258,19 @@ const PatientProfile = () => {
         muscle: Number(measurement.muscle_mass_percent_total) || 0,
         water: Number(measurement.water_percent) || 0,
         visceralFat: Number(measurement.visceral_fat_rating) || 0,
-        bone: Number(measurement.bone_mass_kg) || 0
+        bone: Number(measurement.bone_mass_kg) || 0,
+        fat_arm_right: measurement.fat_arm_right ?? null,
+        fat_arm_left: measurement.fat_arm_left ?? null,
+        fat_leg_right: measurement.fat_leg_right ?? null,
+        fat_leg_left: measurement.fat_leg_left ?? null,
+        fat_trunk: measurement.fat_trunk ?? null,
+        muscle_arm_right: measurement.muscle_arm_right ?? null,
+        muscle_arm_left: measurement.muscle_arm_left ?? null,
+        muscle_leg_right: measurement.muscle_leg_right ?? null,
+        muscle_leg_left: measurement.muscle_leg_left ?? null,
+        muscle_trunk: measurement.muscle_trunk ?? null,
+        metabolic_age: measurement.metabolic_age ?? null,
+        daily_calorie_maintenance: measurement.daily_calorie_maintenance ?? null
       }
     })),
     ...manualMeasurements.map(measurement => {
@@ -296,6 +309,25 @@ const PatientProfile = () => {
       
       queryClient.invalidateQueries({ queryKey: ['manual-measurements', id] });
       alert('Medição excluída com sucesso!');
+    }
+  };
+
+  // Scale measurements handlers
+  const [editingScale, setEditingScale] = useState<any | null>(null);
+  const handleDeleteScale = async (measurement: any) => {
+    if (measurement.type === 'scale' && measurement.id) {
+      const { error } = await supabase
+        .from('scale_measurements')
+        .delete()
+        .eq('id', measurement.id);
+      
+      if (error) {
+        alert('Erro ao excluir medição da balança: ' + error.message);
+        return;
+      }
+      
+      queryClient.invalidateQueries({ queryKey: ['scale-measurements', id] });
+      alert('Medição da balança excluída com sucesso!');
     }
   };
 
@@ -1209,6 +1241,13 @@ const PatientProfile = () => {
             }
           }}
           onDeleteManual={handleDeleteManual}
+          onEditScale={(measurement) => {
+            if (measurement.type === 'scale') {
+              setEditingScale(measurement);
+              setShowManualForm(true);
+            }
+          }}
+          onDeleteScale={handleDeleteScale}
         />
       </div>
 
@@ -1525,12 +1564,13 @@ const PatientProfile = () => {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold text-gray-800 flex items-center space-x-2">
                 <Plus className="h-5 w-5" />
-                <span>{editingManual ? 'Editar Medição' : 'Nova Medição'}</span>
+                <span>{(editingManual || editingScale) ? 'Editar Medição' : 'Nova Medição'}</span>
               </h2>
               <button
                 className="bg-gray-200 text-gray-700 px-3 py-1 rounded hover:bg-gray-300 text-xs font-semibold"
                 onClick={() => {
                   setEditingManual(null);
+                  setEditingScale(null);
                   setShowManualForm(false);
                 }}
               >
@@ -1540,8 +1580,10 @@ const PatientProfile = () => {
             <MeasurementForm 
               patientId={patient.id} 
               editingManual={editingManual} 
+              editingScale={editingScale}
               onFinishEdit={() => {
                 setEditingManual(null);
+                setEditingScale(null);
                 setShowManualForm(false);
               }}
               heightCm={patient.height_cm ? Number(patient.height_cm) : undefined}

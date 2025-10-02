@@ -2,6 +2,7 @@ import React from 'react';
 import { Calendar, Scale, Ruler, TrendingUp, TrendingDown, Trash2 } from 'lucide-react';
 
 interface Measurement {
+  id?: string;
   date: string;
   type: 'manual' | 'scale';
   data: any;
@@ -11,9 +12,11 @@ interface PatientTimelineProps {
   measurements: Measurement[];
   onEditManual?: (measurement: any) => void;
   onDeleteManual?: (measurement: any) => void;
+  onEditScale?: (measurement: any) => void;
+  onDeleteScale?: (measurement: any) => void;
 }
 
-const PatientTimeline: React.FC<PatientTimelineProps> = ({ measurements, onEditManual, onDeleteManual }) => {
+const PatientTimeline: React.FC<PatientTimelineProps> = ({ measurements, onEditManual, onDeleteManual, onEditScale, onDeleteScale }) => {
   // Agrupar medições por data
   const groupedMeasurements = measurements.reduce((groups, measurement) => {
     const dateKey = measurement.date.split('T')[0]; // YYYY-MM-DD
@@ -70,6 +73,30 @@ const PatientTimeline: React.FC<PatientTimelineProps> = ({ measurements, onEditM
                   onClick={() => {
                     if (window.confirm('Tem certeza que deseja excluir esta medição?')) {
                       onDeleteManual(measurement);
+                    }
+                  }}
+                >
+                  <Trash2 className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+          )}
+          {!isManual && (onEditScale || onDeleteScale) && (
+            <div className="flex space-x-2">
+              {onEditScale && (
+                <button
+                  className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded hover:bg-yellow-200 text-xs font-semibold"
+                  onClick={() => onEditScale(measurement)}
+                >
+                  Editar
+                </button>
+              )}
+              {onDeleteScale && (
+                <button
+                  className="px-3 py-1 bg-red-100 text-red-800 rounded hover:bg-red-200 text-xs font-semibold"
+                  onClick={() => {
+                    if (window.confirm('Tem certeza que deseja excluir esta medição?')) {
+                      onDeleteScale(measurement);
                     }
                   }}
                 >
