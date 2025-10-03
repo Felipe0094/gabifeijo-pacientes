@@ -137,46 +137,240 @@ function getBarColor(type, isLast) {
   return '#e5e7eb';
 }
 
-// Classificação de Gordura Corporal Segmentada (%)
-function classifyFatSegmentPercent(segment: 'arm' | 'leg' | 'trunk' | 'total', value?: number, gender?: number) {
-  if (value === undefined || value === null || isNaN(Number(value))) return '-';
-  const v = Number(value);
+// Classificação de Gordura Corporal Segmentada (Relativa ao Sexo)
+// Para segmentos (braço, perna, tronco): usar % do segmento sobre a gordura total (kg)
+// Para total: manter classificação anterior por % de gordura corporal (se necessário)
+function classifyFatSegmentPercent(
+  segment: 'arm' | 'leg' | 'trunk' | 'total',
+  fatPercentSegment?: number,
+  muscleSegmentKg?: number,
+  weightKg?: number,
+  bodyFatPercentTotal?: number,
+  gender?: number
+) {
   const isFemale = gender === 0; // 0 = Feminino, 1 = Masculino
+
+  // Total: usa % de gordura corporal (bodyFatPercentTotal)
+  if (segment === 'total') {
+    if (bodyFatPercentTotal == null || isNaN(Number(bodyFatPercentTotal))) return '-';
+    const v = Number(bodyFatPercentTotal);
+    return isFemale
+      ? (v < 20 ? 'Abaixo da faixa saudável' : (v <= 30 ? 'Adequado' : 'Alto'))
+      : (v < 10 ? 'Abaixo da faixa saudável' : (v <= 20 ? 'Adequado' : 'Alto'));
+  }
+
+  // Segmentos: calcular % do segmento sobre a gordura total
+  if (
+    fatPercentSegment == null || isNaN(Number(fatPercentSegment)) ||
+    muscleSegmentKg == null || isNaN(Number(muscleSegmentKg)) ||
+    weightKg == null || isNaN(Number(weightKg)) || Number(weightKg) <= 0 ||
+    bodyFatPercentTotal == null || isNaN(Number(bodyFatPercentTotal)) || Number(bodyFatPercentTotal) <= 0
+  ) {
+    return '-';
+  }
+
+  const fatPctSeg = Number(fatPercentSegment);
+  const muscleKg = Number(muscleSegmentKg);
+  const weight = Number(weightKg);
+  const totalFatPct = Number(bodyFatPercentTotal);
+
+  // Estimar gordura (kg) do segmento a partir de % de gordura do segmento e massa magra do segmento
+  const denom = 1 - (fatPctSeg / 100);
+  if (denom <= 0) return '-';
+  const segmentFatKg = (muscleKg / denom) - muscleKg;
+  const totalFatKg = (weight * totalFatPct) / 100;
+  if (!isFinite(segmentFatKg) || !isFinite(totalFatKg) || totalFatKg <= 0) return '-';
+  const sharePercent = (segmentFatKg / totalFatKg) * 100;
+
   switch (segment) {
     case 'arm':
-      if (isFemale) return v < 18 ? 'Baixo' : (v <= 28 ? 'Adequado' : 'Alto');
-      return v < 8 ? 'Baixo' : (v <= 18 ? 'Adequado' : 'Alto');
+      return isFemale
+        ? (sharePercent < 5 ? 'Abaixo da faixa saudável' : (sharePercent <= 12 ? 'Adequado' : 'Alto'))
+        : (sharePercent < 3.5 ? 'Abaixo da faixa saudável' : (sharePercent <= 10 ? 'Adequado' : 'Alto'));
     case 'leg':
-      if (isFemale) return v < 18 ? 'Baixo' : (v <= 28 ? 'Adequado' : 'Alto');
-      return v < 10 ? 'Baixo' : (v <= 20 ? 'Adequado' : 'Alto');
+      return isFemale
+        ? (sharePercent < 15 ? 'Abaixo da faixa saudável' : (sharePercent <= 28 ? 'Adequado' : 'Alto'))
+        : (sharePercent < 12 ? 'Abaixo da faixa saudável' : (sharePercent <= 25 ? 'Adequado' : 'Alto'));
     case 'trunk':
-      if (isFemale) return v < 22 ? 'Baixo' : (v <= 30 ? 'Adequado' : 'Alto');
-      return v < 12 ? 'Baixo' : (v <= 22 ? 'Adequado' : 'Alto');
-    case 'total':
-      if (isFemale) return v < 20 ? 'Baixo' : (v <= 30 ? 'Adequado' : 'Alto');
-      return v < 10 ? 'Baixo' : (v <= 20 ? 'Adequado' : 'Alto');
+      return isFemale
+        ? (sharePercent < 35 ? 'Abaixo da faixa saudável' : (sharePercent <= 50 ? 'Adequado' : 'Alto'))
+        : (sharePercent < 30 ? 'Abaixo da faixa saudável' : (sharePercent <= 45 ? 'Adequado' : 'Alto'));
+    default:
+      return '-';
+  }
+  }
+
+  // Classificação direta por % relativo de gordura total
+  function classifyFatSegmentShare(
+    segment: 'arm' | 'leg' | 'trunk',
+    sharePercent?: number,
+    gender?: number
+  ) {
+  if (sharePercent == null || isNaN(Number(sharePercent))) return '-';
+  const v = Number(sharePercent);
+  const isFemale = gender === 0;
+  switch (segment) {
+    case 'arm':
+      return isFemale
+        ? (v < 5 ? 'Abaixo da faixa saudável' : (v <= 12 ? 'Adequado' : 'Alto'))
+        : (v < 4 ? 'Abaixo da faixa saudável' : (v <= 10 ? 'Adequado' : 'Alto'));
+    case 'leg':
+      return isFemale
+        ? (v < 15 ? 'Abaixo da faixa saudável' : (v <= 28 ? 'Adequado' : 'Alto'))
+        : (v < 12 ? 'Abaixo da faixa saudável' : (v <= 25 ? 'Adequado' : 'Alto'));
+    case 'trunk':
+      return isFemale
+        ? (v < 35 ? 'Abaixo da faixa saudável' : (v <= 50 ? 'Adequado' : 'Alto'))
+        : (v < 30 ? 'Abaixo da faixa saudável' : (v <= 45 ? 'Adequado' : 'Alto'));
     default:
       return '-';
   }
 }
 
+// Utilitários em escopo de módulo para uso em funções top-level
+// Parsear números PT-BR (suporta "1.234,56", "12%", etc.)
+function parsePtNumber(val: any): number | undefined {
+  if (val === null || val === undefined) return undefined;
+  if (typeof val === 'number') {
+    return isFinite(val) ? val : undefined;
+  }
+  if (typeof val === 'string') {
+    let s = val.trim();
+    if (!s) return undefined;
+    // Remover espaços e símbolo de porcentagem
+    s = s.replace(/\s+/g, '').replace(/%/g, '');
+    // Remover separador de milhar "." e trocar vírgula por ponto
+    s = s.replace(/\./g, '').replace(/,/g, '.');
+    const n = Number(s);
+    return isFinite(n) ? n : undefined;
+  }
+  return undefined;
+}
+
+// Obter campo considerando chaves alternativas
+function getField(obj: any, keys: string[]): any {
+  if (!obj) return undefined;
+  for (const k of keys) {
+    if (obj[k] !== undefined && obj[k] !== null) return obj[k];
+  }
+  return undefined;
+}
+
+// Acessar segmento com variações de chave (acentos/espacos)
+function getSegment(
+  segments: any,
+  canonical: 'Braco_direito' | 'Braco_esquerdo' | 'Perna_direita' | 'Perna_esquerda' | 'Tronco'
+) {
+  if (!segments) return undefined;
+  const map: Record<string, string[]> = {
+    Braco_direito: ['Braco_direito', 'Braço_direito', 'Braco direito', 'Braço direito'],
+    Braco_esquerdo: ['Braco_esquerdo', 'Braço_esquerdo', 'Braco esquerdo', 'Braço esquerdo'],
+    Perna_direita: ['Perna_direita', 'Perna direita'],
+    Perna_esquerda: ['Perna_esquerda', 'Perna esquerda'],
+    Tronco: ['Tronco']
+  };
+  const keys = map[canonical] || [canonical];
+  for (const k of keys) {
+    if (segments[k] !== undefined && segments[k] !== null) return segments[k];
+  }
+  return undefined;
+}
+
+// Total de gordura segmentada (kg) somando braços, pernas e tronco, ignorando cabeça
+function computeTotalSegmentedFatKg(selectedMeasurement: any): number | undefined {
+  try {
+    const segJson = selectedMeasurement?.segment_data_json?.Paciente?.Segmentos;
+    const names = ['Braco_esquerdo', 'Braco_direito', 'Perna_esquerda', 'Perna_direita', 'Tronco'] as const;
+    let total = 0;
+    let counted = 0;
+    for (const name of names) {
+      const seg = getSegment(segJson, name);
+      let gordKg = parsePtNumber(getField(seg, ['Gordura_kg', 'Gordura (kg)']));
+      if (gordKg == null) {
+        const m = parsePtNumber(getField(seg, ['Musculo_kg', 'Músculo_kg', 'Musculo (kg)', 'Músculo (kg)']));
+        const pctSeg = parsePtNumber(getField(seg, ['Percentual_Gordura_segmento', '% Gordura segmentar']));
+        if (m != null && isFinite(m) && pctSeg != null && isFinite(pctSeg)) {
+          const denom = 1 - (pctSeg / 100);
+          if (denom > 0) {
+            const totalSegKg = m / denom;
+            const calc = totalSegKg - m;
+            gordKg = isFinite(calc) ? calc : undefined;
+          }
+        }
+      }
+      if (gordKg != null && isFinite(gordKg) && gordKg > 0) {
+        total += gordKg;
+        counted += 1;
+      }
+    }
+    if (counted > 0 && isFinite(total) && total > 0) return total;
+
+    // Fallback: calcular pela combinação muscle_* (kg) + fat_* (%) do selectedMeasurement
+    const combos: Array<[number | undefined, number | undefined]> = [
+      [selectedMeasurement?.muscle_arm_left, selectedMeasurement?.fat_arm_left],
+      [selectedMeasurement?.muscle_arm_right, selectedMeasurement?.fat_arm_right],
+      [selectedMeasurement?.muscle_leg_left, selectedMeasurement?.fat_leg_left],
+      [selectedMeasurement?.muscle_leg_right, selectedMeasurement?.fat_leg_right],
+      [selectedMeasurement?.muscle_trunk, selectedMeasurement?.fat_trunk],
+    ].map(([m, p]) => [m != null ? Number(m) : undefined, p != null ? Number(p) : undefined]);
+    let total2 = 0;
+    let counted2 = 0;
+    for (const [mKg, pct] of combos) {
+      if (mKg != null && isFinite(mKg) && pct != null && isFinite(pct)) {
+        const denom = 1 - (pct / 100);
+        if (denom > 0) {
+          const totalSegKg = mKg / denom;
+          const calc = totalSegKg - mKg;
+          if (isFinite(calc) && calc > 0) {
+            total2 += calc;
+            counted2 += 1;
+          }
+        }
+      }
+    }
+    if (counted2 > 0 && isFinite(total2) && total2 > 0) return total2;
+
+    return undefined;
+  } catch (e) {
+    return undefined;
+  }
+}
+
+// Removido: helper de cálculo de gordura segmentada (kg) e participação sobre total
+
 // Classificação de Massa Muscular Segmentada (kg)
-function classifyMuscleSegmentKg(segment: 'arm' | 'leg' | 'trunk' | 'total', kg?: number, gender?: number) {
-  if (kg === undefined || kg === null || isNaN(Number(kg))) return '-';
-  const v = Number(kg);
+function classifyMuscleSegmentKg(
+  segment: 'arm' | 'leg' | 'trunk' | 'total',
+  segmentKg?: number,
+  totalMwKg?: number,
+  weightKg?: number,
+  gender?: number
+) {
   const isFemale = gender === 0; // 0 = Feminino, 1 = Masculino
+  // Calcular percentuais corretamente:
+  // - Para segmentos (braço, perna, tronco): usar % do segmento sobre o TOTAL mW (kg)
+  // - Para total: usar mW% do peso (total mW / peso)
+  if (segment === 'total') {
+    if (
+      totalMwKg === undefined || totalMwKg === null || isNaN(Number(totalMwKg)) || Number(totalMwKg) <= 0 ||
+      weightKg === undefined || weightKg === null || isNaN(Number(weightKg)) || Number(weightKg) <= 0
+    ) return '-';
+    const percentTotal = (Number(totalMwKg) / Number(weightKg)) * 100;
+    return isFemale ? (percentTotal < 45 ? 'Baixo' : 'Adequado') : (percentTotal < 55 ? 'Baixo' : 'Adequado');
+  }
+  // Segmentos
+  if (
+    segmentKg === undefined || segmentKg === null || isNaN(Number(segmentKg)) || Number(segmentKg) < 0 ||
+    totalMwKg === undefined || totalMwKg === null || isNaN(Number(totalMwKg)) || Number(totalMwKg) <= 0
+  ) return '-';
+  const percentSeg = (Number(segmentKg) / Number(totalMwKg)) * 100;
   switch (segment) {
     case 'arm':
-      // cada braço
-      return isFemale ? (v < 2.0 ? 'Baixo' : 'Adequado') : (v < 3.0 ? 'Baixo' : 'Adequado');
+      return isFemale ? (percentSeg < 3 ? 'Baixo' : 'Adequado') : (percentSeg < 4 ? 'Baixo' : 'Adequado');
     case 'leg':
-      // cada perna
-      return isFemale ? (v < 7.0 ? 'Baixo' : 'Adequado') : (v < 9.0 ? 'Baixo' : 'Adequado');
+      return isFemale ? (percentSeg < 9 ? 'Baixo' : 'Adequado') : (percentSeg < 11 ? 'Baixo' : 'Adequado');
     case 'trunk':
-      return isFemale ? (v < 24.0 ? 'Baixo' : 'Adequado') : (v < 28.0 ? 'Baixo' : 'Adequado');
-    case 'total':
-      // total usa percentuais (mW%)
-      return '-';
+      return isFemale ? (percentSeg < 36 ? 'Baixo' : 'Adequado') : (percentSeg < 40 ? 'Baixo' : 'Adequado');
     default:
       return '-';
   }
@@ -209,6 +403,9 @@ const PatientProfile = () => {
   // Blood tests states
   const [showBloodTestForm, setShowBloodTestForm] = useState(false);
   const [editingBloodTest, setEditingBloodTest] = useState<BloodTest | null>(null);
+  // Tooltips clicáveis nos títulos das cards segmentadas
+  const [showFatTooltip, setShowFatTooltip] = useState(false);
+  const [showMuscleTooltip, setShowMuscleTooltip] = useState(false);
 
   // Foto de perfil: garantir ordem dos hooks e valor estável
   const profilePhotoPath = patient && patient.profile_photo_url && !patient.profile_photo_url.startsWith('http')
@@ -758,136 +955,522 @@ const PatientProfile = () => {
         <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Card Gordura */}
           <div
-            className="relative rounded-xl border border-gray-100 shadow-lg overflow-hidden h-64"
+            className="relative rounded-xl border border-gray-100 shadow-lg overflow-hidden h-80"
             style={{
               backgroundImage: "url(/gordura.png)",
               backgroundSize: "contain",
-              backgroundPosition: "center",
+              backgroundPosition: "center 72px",
               backgroundRepeat: "no-repeat",
               backgroundColor: "#ffffff",
             }}
           >
             {/* Overlay de rótulos */}
             <div className="absolute inset-0 pointer-events-none">
+              {/* Título do Card Gordura (mini-card) */}
+              <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-white rounded-lg px-4 py-2 border border-[#ea580c]/30 shadow-sm text-xs md:text-sm font-semibold text-[#ea580c] text-center max-w-[90%] break-words whitespace-normal pointer-events-auto z-50">
+                <div className="flex items-center justify-center gap-2 flex-wrap">
+                  <span className="text-center break-words whitespace-normal">Análise Segmentada (Gordura)</span>
+                </div>
+              </div>
               {/* Top Left - Braço Esq. */}
-              <div className="absolute top-2 left-2 text-[#ea580c] text-xs md:text-sm font-semibold leading-tight max-w-[46%]">
+              <div className="absolute top-20 left-2 text-[#ea580c] text-xs md:text-sm font-semibold leading-tight max-w-[46%]">
                 <div>Gordura Braço Esq.</div>
                 <div>
-                  {selectedMeasurement?.fat_arm_left != null
-                    ? `${selectedMeasurement?.muscle_arm_left != null ? `${(((Number(selectedMeasurement.muscle_arm_left)) / (1 - (Number(selectedMeasurement.fat_arm_left) / 100))) * (Number(selectedMeasurement.fat_arm_left) / 100)).toFixed(1)} kg${selectedMeasurement?.weight != null && selectedMeasurement?.body_fat_percent != null ? ` (${((((Number(selectedMeasurement.muscle_arm_left)) / (1 - (Number(selectedMeasurement.fat_arm_left) / 100))) * (Number(selectedMeasurement.fat_arm_left) / 100)) / (Number(selectedMeasurement.weight) * Number(selectedMeasurement.body_fat_percent) / 100) * 100).toFixed(1)}%)` : ''}` : '-'}`
-                    : '-'}
+                  {(() => {
+                    const segJson = (selectedMeasurement as any)?.segment_data_json?.Paciente?.Segmentos;
+                    const seg = getSegment(segJson, 'Braco_esquerdo');
+                    let gordKg = parsePtNumber(getField(seg, ['Gordura_kg', 'Gordura (kg)']));
+                    let relPct = parsePtNumber(getField(seg, ['Percentual_relativo_gordura_total', '% relativo gordura total', 'Percentual Relativo Gordura Total']));
+                    // Fallbacks
+                    if (gordKg == null) {
+                      const m = parsePtNumber(getField(seg, ['Musculo_kg', 'Músculo_kg', 'Musculo (kg)', 'Músculo (kg)'])) ?? (selectedMeasurement?.muscle_arm_left != null ? Number(selectedMeasurement.muscle_arm_left) : undefined);
+                      const pctSeg = parsePtNumber(getField(seg, ['Percentual_Gordura_segmento', '% Gordura segmentar'])) ?? (selectedMeasurement?.fat_arm_left != null ? Number(selectedMeasurement.fat_arm_left) : undefined);
+                      if (m != null && isFinite(m) && pctSeg != null && isFinite(pctSeg)) {
+                        const denom = 1 - (pctSeg / 100);
+                        if (denom > 0) {
+                          const totalSegKg = m / denom;
+                          const calc = totalSegKg - m;
+                          gordKg = isFinite(calc) ? calc : undefined;
+                        }
+                      }
+                    }
+                    if (relPct == null) {
+                      const totalFatModel = (selectedMeasurement as any)?.segment_data_json?.Paciente?.Gordura_total_kg;
+                      const totalFatKg = totalFatModel != null ? parsePtNumber(totalFatModel) : (() => {
+                        const w = parsePtNumber((selectedMeasurement as any)?.weight);
+                        const totalFatPct = parsePtNumber((selectedMeasurement as any)?.body_fat_percent);
+                        if (w != null && totalFatPct != null && w > 0) return (w * totalFatPct) / 100;
+                        return undefined;
+                      })();
+                      if (gordKg != null && isFinite(gordKg) && totalFatKg != null && isFinite(totalFatKg) && totalFatKg > 0) {
+                        const share = (gordKg / totalFatKg) * 100;
+                        relPct = isFinite(share) ? share : undefined;
+                      }
+                    }
+                    const valStr = [
+                      gordKg != null && isFinite(gordKg) ? `${gordKg.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg` : null,
+                      relPct != null && isFinite(relPct) ? `${relPct.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%` : null,
+                    ].filter(Boolean).join(', ');
+                    return valStr || '-';
+                  })()}
                 </div>
-                <div className="text-[10px] md:text-xs font-medium text-orange-700">Classificação: {classifyFatSegmentPercent('arm', selectedMeasurement?.fat_arm_left != null ? Number(selectedMeasurement.fat_arm_left) : undefined, patient?.gender)}</div>
+                <div className="text-[10px] md:text-xs font-medium text-orange-700">
+                  {(() => {
+                    const segJson = (selectedMeasurement as any)?.segment_data_json?.Paciente?.Segmentos;
+                    const seg = getSegment(segJson, 'Braco_esquerdo');
+                    let relPct = parsePtNumber(getField(seg, ['Percentual_relativo_gordura_total', '% relativo gordura total', 'Percentual Relativo Gordura Total']));
+                    if (relPct == null) {
+                      const gordKg = parsePtNumber(getField(seg, ['Gordura_kg', 'Gordura (kg)']));
+                      const totalFatModel = (selectedMeasurement as any)?.segment_data_json?.Paciente?.Gordura_total_kg;
+                      const totalFatKg = totalFatModel != null ? parsePtNumber(totalFatModel) : (() => {
+                        const w = parsePtNumber((selectedMeasurement as any)?.weight);
+                        const totalFatPct = parsePtNumber((selectedMeasurement as any)?.body_fat_percent);
+                        if (w != null && totalFatPct != null && w > 0) return (w * totalFatPct) / 100;
+                        return undefined;
+                      })();
+                      if (gordKg != null && isFinite(gordKg) && totalFatKg != null && isFinite(totalFatKg) && totalFatKg > 0) {
+                        const share = (gordKg / totalFatKg) * 100;
+                        relPct = isFinite(share) ? share : undefined;
+                      }
+                    }
+                    let cls: string;
+                    if (relPct != null && isFinite(relPct)) {
+                      cls = classifyFatSegmentShare('arm', relPct, patient?.gender);
+                    } else {
+                      const fatPctSeg = parsePtNumber(getField(seg, ['Percentual_Gordura_segmento', '% Gordura segmentar'])) ?? (selectedMeasurement?.fat_arm_left != null ? Number(selectedMeasurement.fat_arm_left) : undefined);
+                      const muscleSegKg = parsePtNumber(getField(seg, ['Musculo_kg', 'Músculo_kg', 'Musculo (kg)', 'Músculo (kg)'])) ?? (selectedMeasurement?.muscle_arm_left != null ? Number(selectedMeasurement.muscle_arm_left) : undefined);
+                      const weightKg = parsePtNumber((selectedMeasurement as any)?.weight);
+                      const totalFatPct = parsePtNumber((selectedMeasurement as any)?.body_fat_percent);
+                      cls = classifyFatSegmentPercent('arm', fatPctSeg, muscleSegKg, weightKg, totalFatPct, patient?.gender);
+                    }
+                    return cls;
+                  })()}
+                </div>
               </div>
               {/* Top Right - Braço Dir. */}
-              <div className="absolute top-2 right-2 text-right text-[#ea580c] text-xs md:text-sm font-semibold leading-tight max-w-[46%]">
+              <div className="absolute top-20 right-2 text-right text-[#ea580c] text-xs md:text-sm font-semibold leading-tight max-w-[46%]">
                 <div>Gordura Braço Dir.</div>
                 <div>
-                  {selectedMeasurement?.fat_arm_right != null
-                    ? `${selectedMeasurement?.muscle_arm_right != null ? `${(((Number(selectedMeasurement.muscle_arm_right)) / (1 - (Number(selectedMeasurement.fat_arm_right) / 100))) * (Number(selectedMeasurement.fat_arm_right) / 100)).toFixed(1)} kg${selectedMeasurement?.weight != null && selectedMeasurement?.body_fat_percent != null ? ` (${((((Number(selectedMeasurement.muscle_arm_right)) / (1 - (Number(selectedMeasurement.fat_arm_right) / 100))) * (Number(selectedMeasurement.fat_arm_right) / 100)) / (Number(selectedMeasurement.weight) * Number(selectedMeasurement.body_fat_percent) / 100) * 100).toFixed(1)}%)` : ''}` : '-'}`
-                    : '-'}
+                  {(() => {
+                    const segJson = (selectedMeasurement as any)?.segment_data_json?.Paciente?.Segmentos;
+                    const seg = getSegment(segJson, 'Braco_direito');
+                    let gordKg = parsePtNumber(getField(seg, ['Gordura_kg', 'Gordura (kg)']));
+                    let relPct = parsePtNumber(getField(seg, ['Percentual_relativo_gordura_total', '% relativo gordura total', 'Percentual Relativo Gordura Total']));
+                    if (gordKg == null) {
+                      const m = parsePtNumber(getField(seg, ['Musculo_kg', 'Músculo_kg', 'Musculo (kg)', 'Músculo (kg)'])) ?? (selectedMeasurement?.muscle_arm_right != null ? Number(selectedMeasurement.muscle_arm_right) : undefined);
+                      const pctSeg = parsePtNumber(getField(seg, ['Percentual_Gordura_segmento', '% Gordura segmentar'])) ?? (selectedMeasurement?.fat_arm_right != null ? Number(selectedMeasurement.fat_arm_right) : undefined);
+                      if (m != null && isFinite(m) && pctSeg != null && isFinite(pctSeg)) {
+                        const denom = 1 - (pctSeg / 100);
+                        if (denom > 0) {
+                          const totalSegKg = m / denom;
+                          const calc = totalSegKg - m;
+                          gordKg = isFinite(calc) ? calc : undefined;
+                        }
+                      }
+                    }
+                    if (relPct == null) {
+                      const totalFatModel = (selectedMeasurement as any)?.segment_data_json?.Paciente?.Gordura_total_kg;
+                      const totalFatKg = totalFatModel != null ? parsePtNumber(totalFatModel) : (() => {
+                        const w = parsePtNumber((selectedMeasurement as any)?.weight);
+                        const totalFatPct = parsePtNumber((selectedMeasurement as any)?.body_fat_percent);
+                        if (w != null && totalFatPct != null && w > 0) return (w * totalFatPct) / 100;
+                        return undefined;
+                      })();
+                      if (gordKg != null && isFinite(gordKg) && totalFatKg != null && isFinite(totalFatKg) && totalFatKg > 0) {
+                        const share = (gordKg / totalFatKg) * 100;
+                        relPct = isFinite(share) ? share : undefined;
+                      }
+                    }
+                    const valStr = [
+                      gordKg != null && isFinite(gordKg) ? `${gordKg.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg` : null,
+                      relPct != null && isFinite(relPct) ? `${relPct.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%` : null,
+                    ].filter(Boolean).join(', ');
+                    return valStr || '-';
+                  })()}
                 </div>
-                <div className="text-[10px] md:text-xs font-medium text-orange-700">Classificação: {classifyFatSegmentPercent('arm', selectedMeasurement?.fat_arm_right != null ? Number(selectedMeasurement.fat_arm_right) : undefined, patient?.gender)}</div>
+                <div className="text-[10px] md:text-xs font-medium text-orange-700">
+                  {(() => {
+                    const segJson = (selectedMeasurement as any)?.segment_data_json?.Paciente?.Segmentos;
+                    const seg = getSegment(segJson, 'Braco_direito');
+                    let relPct = parsePtNumber(getField(seg, ['Percentual_relativo_gordura_total', '% relativo gordura total', 'Percentual Relativo Gordura Total']));
+                    if (relPct == null) {
+                      const gordKg = parsePtNumber(getField(seg, ['Gordura_kg', 'Gordura (kg)']));
+                      const totalFatModel = (selectedMeasurement as any)?.segment_data_json?.Paciente?.Gordura_total_kg;
+                      const totalFatKg = totalFatModel != null ? parsePtNumber(totalFatModel) : (() => {
+                        const w = parsePtNumber((selectedMeasurement as any)?.weight);
+                        const totalFatPct = parsePtNumber((selectedMeasurement as any)?.body_fat_percent);
+                        if (w != null && totalFatPct != null && w > 0) return (w * totalFatPct) / 100;
+                        return undefined;
+                      })();
+                      if (gordKg != null && isFinite(gordKg) && totalFatKg != null && isFinite(totalFatKg) && totalFatKg > 0) {
+                        const share = (gordKg / totalFatKg) * 100;
+                        relPct = isFinite(share) ? share : undefined;
+                      }
+                    }
+                    let cls: string;
+                    if (relPct != null && isFinite(relPct)) {
+                      cls = classifyFatSegmentShare('arm', relPct, patient?.gender);
+                    } else {
+                      const fatPctSeg = parsePtNumber(getField(seg, ['Percentual_Gordura_segmento', '% Gordura segmentar'])) ?? (selectedMeasurement?.fat_arm_right != null ? Number(selectedMeasurement.fat_arm_right) : undefined);
+                      const muscleSegKg = parsePtNumber(getField(seg, ['Musculo_kg', 'Músculo_kg', 'Musculo (kg)', 'Músculo (kg)'])) ?? (selectedMeasurement?.muscle_arm_right != null ? Number(selectedMeasurement.muscle_arm_right) : undefined);
+                      const weightKg = parsePtNumber((selectedMeasurement as any)?.weight);
+                      const totalFatPct = parsePtNumber((selectedMeasurement as any)?.body_fat_percent);
+                      cls = classifyFatSegmentPercent('arm', fatPctSeg, muscleSegKg, weightKg, totalFatPct, patient?.gender);
+                    }
+                    return cls;
+                  })()}
+                </div>
               </div>
               {/* Bottom Left - Perna Esq. */}
               <div className="absolute bottom-2 left-2 text-[#ea580c] text-xs md:text-sm font-semibold leading-tight max-w-[46%]">
                 <div>Gordura Perna Esq.</div>
                 <div>
-                  {selectedMeasurement?.fat_leg_left != null
-                    ? `${selectedMeasurement?.muscle_leg_left != null ? `${(((Number(selectedMeasurement.muscle_leg_left)) / (1 - (Number(selectedMeasurement.fat_leg_left) / 100))) * (Number(selectedMeasurement.fat_leg_left) / 100)).toFixed(1)} kg${selectedMeasurement?.weight != null && selectedMeasurement?.body_fat_percent != null ? ` (${((((Number(selectedMeasurement.muscle_leg_left)) / (1 - (Number(selectedMeasurement.fat_leg_left) / 100))) * (Number(selectedMeasurement.fat_leg_left) / 100)) / (Number(selectedMeasurement.weight) * Number(selectedMeasurement.body_fat_percent) / 100) * 100).toFixed(1)}%)` : ''}` : '-'}`
-                    : '-'}
+                  {(() => {
+                    const segJson = (selectedMeasurement as any)?.segment_data_json?.Paciente?.Segmentos;
+                    const seg = getSegment(segJson, 'Perna_esquerda');
+                    let gordKg = parsePtNumber(getField(seg, ['Gordura_kg', 'Gordura (kg)']));
+                    let relPct = parsePtNumber(getField(seg, ['Percentual_relativo_gordura_total', '% relativo gordura total', 'Percentual Relativo Gordura Total']));
+                    if (gordKg == null) {
+                      const m = parsePtNumber(getField(seg, ['Musculo_kg', 'Músculo_kg', 'Musculo (kg)', 'Músculo (kg)'])) ?? (selectedMeasurement?.muscle_leg_left != null ? Number(selectedMeasurement.muscle_leg_left) : undefined);
+                      const pctSeg = parsePtNumber(getField(seg, ['Percentual_Gordura_segmento', '% Gordura segmentar'])) ?? (selectedMeasurement?.fat_leg_left != null ? Number(selectedMeasurement.fat_leg_left) : undefined);
+                      if (m != null && isFinite(m) && pctSeg != null && isFinite(pctSeg)) {
+                        const denom = 1 - (pctSeg / 100);
+                        if (denom > 0) {
+                          const totalSegKg = m / denom;
+                          const calc = totalSegKg - m;
+                          gordKg = isFinite(calc) ? calc : undefined;
+                        }
+                      }
+                    }
+                    if (relPct == null) {
+                      const totalFatModel = (selectedMeasurement as any)?.segment_data_json?.Paciente?.Gordura_total_kg;
+                      const totalFatKg = totalFatModel != null ? parsePtNumber(totalFatModel) : (() => {
+                        const w = parsePtNumber((selectedMeasurement as any)?.weight);
+                        const totalFatPct = parsePtNumber((selectedMeasurement as any)?.body_fat_percent);
+                        if (w != null && totalFatPct != null && w > 0) return (w * totalFatPct) / 100;
+                        return undefined;
+                      })();
+                      if (gordKg != null && isFinite(gordKg) && totalFatKg != null && isFinite(totalFatKg) && totalFatKg > 0) {
+                        const share = (gordKg / totalFatKg) * 100;
+                        relPct = isFinite(share) ? share : undefined;
+                      }
+                    }
+                    const valStr = [
+                      gordKg != null && isFinite(gordKg) ? `${gordKg.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg` : null,
+                      relPct != null && isFinite(relPct) ? `${relPct.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%` : null,
+                    ].filter(Boolean).join(', ');
+                    return valStr || '-';
+                  })()}
                 </div>
-                <div className="text-[10px] md:text-xs font-medium text-orange-700">Classificação: {classifyFatSegmentPercent('leg', selectedMeasurement?.fat_leg_left != null ? Number(selectedMeasurement.fat_leg_left) : undefined, patient?.gender)}</div>
+                <div className="text-[10px] md:text-xs font-medium text-orange-700">
+                  {(() => {
+                    const segJson = (selectedMeasurement as any)?.segment_data_json?.Paciente?.Segmentos;
+                    const seg = getSegment(segJson, 'Perna_esquerda');
+                    let relPct = parsePtNumber(getField(seg, ['Percentual_relativo_gordura_total', '% relativo gordura total', 'Percentual Relativo Gordura Total']));
+                    if (relPct == null) {
+                      const gordKg = parsePtNumber(getField(seg, ['Gordura_kg', 'Gordura (kg)']));
+                      const totalFatModel = (selectedMeasurement as any)?.segment_data_json?.Paciente?.Gordura_total_kg;
+                      const totalFatKg = totalFatModel != null ? parsePtNumber(totalFatModel) : (() => {
+                        const w = parsePtNumber((selectedMeasurement as any)?.weight);
+                        const totalFatPct = parsePtNumber((selectedMeasurement as any)?.body_fat_percent);
+                        if (w != null && totalFatPct != null && w > 0) return (w * totalFatPct) / 100;
+                        return undefined;
+                      })();
+                      if (gordKg != null && isFinite(gordKg) && totalFatKg != null && isFinite(totalFatKg) && totalFatKg > 0) {
+                        const share = (gordKg / totalFatKg) * 100;
+                        relPct = isFinite(share) ? share : undefined;
+                      }
+                    }
+                    let cls: string;
+                    if (relPct != null && isFinite(relPct)) {
+                      cls = classifyFatSegmentShare('leg', relPct, patient?.gender);
+                    } else {
+                      const fatPctSeg = parsePtNumber(getField(seg, ['Percentual_Gordura_segmento', '% Gordura segmentar'])) ?? (selectedMeasurement?.fat_leg_left != null ? Number(selectedMeasurement.fat_leg_left) : undefined);
+                      const muscleSegKg = parsePtNumber(getField(seg, ['Musculo_kg', 'Músculo_kg', 'Musculo (kg)', 'Músculo (kg)'])) ?? (selectedMeasurement?.muscle_leg_left != null ? Number(selectedMeasurement.muscle_leg_left) : undefined);
+                      const weightKg = parsePtNumber((selectedMeasurement as any)?.weight);
+                      const totalFatPct = parsePtNumber((selectedMeasurement as any)?.body_fat_percent);
+                      cls = classifyFatSegmentPercent('leg', fatPctSeg, muscleSegKg, weightKg, totalFatPct, patient?.gender);
+                    }
+                    return cls;
+                  })()}
+                </div>
               </div>
               {/* Bottom Right - Perna Dir. */}
               <div className="absolute bottom-2 right-2 text-right text-[#ea580c] text-xs md:text-sm font-semibold leading-tight max-w-[46%]">
                 <div>Gordura Perna Dir.</div>
                 <div>
-                  {selectedMeasurement?.fat_leg_right != null
-                    ? `${selectedMeasurement?.muscle_leg_right != null ? `${(((Number(selectedMeasurement.muscle_leg_right)) / (1 - (Number(selectedMeasurement.fat_leg_right) / 100))) * (Number(selectedMeasurement.fat_leg_right) / 100)).toFixed(1)} kg${selectedMeasurement?.weight != null && selectedMeasurement?.body_fat_percent != null ? ` (${((((Number(selectedMeasurement.muscle_leg_right)) / (1 - (Number(selectedMeasurement.fat_leg_right) / 100))) * (Number(selectedMeasurement.fat_leg_right) / 100)) / (Number(selectedMeasurement.weight) * Number(selectedMeasurement.body_fat_percent) / 100) * 100).toFixed(1)}%)` : ''}` : '-'}`
-                    : '-'}
+                  {(() => {
+                    const segJson = (selectedMeasurement as any)?.segment_data_json?.Paciente?.Segmentos;
+                    const seg = getSegment(segJson, 'Perna_direita');
+                    let gordKg = parsePtNumber(getField(seg, ['Gordura_kg', 'Gordura (kg)']));
+                    let relPct = parsePtNumber(getField(seg, ['Percentual_relativo_gordura_total', '% relativo gordura total', 'Percentual Relativo Gordura Total']));
+                    if (gordKg == null) {
+                      const m = parsePtNumber(getField(seg, ['Musculo_kg', 'Músculo_kg', 'Musculo (kg)', 'Músculo (kg)'])) ?? (selectedMeasurement?.muscle_leg_right != null ? Number(selectedMeasurement.muscle_leg_right) : undefined);
+                      const pctSeg = parsePtNumber(getField(seg, ['Percentual_Gordura_segmento', '% Gordura segmentar'])) ?? (selectedMeasurement?.fat_leg_right != null ? Number(selectedMeasurement.fat_leg_right) : undefined);
+                      if (m != null && isFinite(m) && pctSeg != null && isFinite(pctSeg)) {
+                        const denom = 1 - (pctSeg / 100);
+                        if (denom > 0) {
+                          const totalSegKg = m / denom;
+                          const calc = totalSegKg - m;
+                          gordKg = isFinite(calc) ? calc : undefined;
+                        }
+                      }
+                    }
+                    if (relPct == null) {
+                      const totalFatModel = (selectedMeasurement as any)?.segment_data_json?.Paciente?.Gordura_total_kg;
+                      const totalFatKg = totalFatModel != null ? parsePtNumber(totalFatModel) : (() => {
+                        const w = parsePtNumber((selectedMeasurement as any)?.weight);
+                        const totalFatPct = parsePtNumber((selectedMeasurement as any)?.body_fat_percent);
+                        if (w != null && totalFatPct != null && w > 0) return (w * totalFatPct) / 100;
+                        return undefined;
+                      })();
+                      if (gordKg != null && isFinite(gordKg) && totalFatKg != null && isFinite(totalFatKg) && totalFatKg > 0) {
+                        const share = (gordKg / totalFatKg) * 100;
+                        relPct = isFinite(share) ? share : undefined;
+                      }
+                    }
+                    const valStr = [
+                      gordKg != null && isFinite(gordKg) ? `${gordKg.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg` : null,
+                      relPct != null && isFinite(relPct) ? `${relPct.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%` : null,
+                    ].filter(Boolean).join(', ');
+                    return valStr || '-';
+                  })()}
                 </div>
-                <div className="text-[10px] md:text-xs font-medium text-orange-700">Classificação: {classifyFatSegmentPercent('leg', selectedMeasurement?.fat_leg_right != null ? Number(selectedMeasurement.fat_leg_right) : undefined, patient?.gender)}</div>
+                <div className="text-[10px] md:text-xs font-medium text-orange-700">
+                  {(() => {
+                    const segJson = (selectedMeasurement as any)?.segment_data_json?.Paciente?.Segmentos;
+                    const seg = getSegment(segJson, 'Perna_direita');
+                    let relPct = parsePtNumber(getField(seg, ['Percentual_relativo_gordura_total', '% relativo gordura total', 'Percentual Relativo Gordura Total']));
+                    if (relPct == null) {
+                      const gordKg = parsePtNumber(getField(seg, ['Gordura_kg', 'Gordura (kg)']));
+                      const totalFatModel = (selectedMeasurement as any)?.segment_data_json?.Paciente?.Gordura_total_kg;
+                      const totalFatKg = totalFatModel != null ? parsePtNumber(totalFatModel) : (() => {
+                        const w = parsePtNumber((selectedMeasurement as any)?.weight);
+                        const totalFatPct = parsePtNumber((selectedMeasurement as any)?.body_fat_percent);
+                        if (w != null && totalFatPct != null && w > 0) return (w * totalFatPct) / 100;
+                        return undefined;
+                      })();
+                      if (gordKg != null && isFinite(gordKg) && totalFatKg != null && isFinite(totalFatKg) && totalFatKg > 0) {
+                        const share = (gordKg / totalFatKg) * 100;
+                        relPct = isFinite(share) ? share : undefined;
+                      }
+                    }
+                    let cls: string;
+                    if (relPct != null && isFinite(relPct)) {
+                      cls = classifyFatSegmentShare('leg', relPct, patient?.gender);
+                    } else {
+                      const fatPctSeg = parsePtNumber(getField(seg, ['Percentual_Gordura_segmento', '% Gordura segmentar'])) ?? (selectedMeasurement?.fat_leg_right != null ? Number(selectedMeasurement.fat_leg_right) : undefined);
+                      const muscleSegKg = parsePtNumber(getField(seg, ['Musculo_kg', 'Músculo_kg', 'Musculo (kg)', 'Músculo (kg)'])) ?? (selectedMeasurement?.muscle_leg_right != null ? Number(selectedMeasurement.muscle_leg_right) : undefined);
+                      const weightKg = parsePtNumber((selectedMeasurement as any)?.weight);
+                      const totalFatPct = parsePtNumber((selectedMeasurement as any)?.body_fat_percent);
+                      cls = classifyFatSegmentPercent('leg', fatPctSeg, muscleSegKg, weightKg, totalFatPct, patient?.gender);
+                    }
+                    return cls;
+                  })()}
+                </div>
               </div>
               {/* Center - Tronco */}
-              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center text-[#ea580c] text-sm md:text-base font-semibold leading-tight">
+              <div className="absolute left-1/2 top-[58%] -translate-x-1/2 -translate-y-1/2 text-center text-[#ea580c] text-sm md:text-base font-semibold leading-tight">
                 <div>Gordura Tronco</div>
                 <div>
-                  {selectedMeasurement?.fat_trunk != null
-                    ? `${selectedMeasurement?.muscle_trunk != null ? `${(((Number(selectedMeasurement.muscle_trunk)) / (1 - (Number(selectedMeasurement.fat_trunk) / 100))) * (Number(selectedMeasurement.fat_trunk) / 100)).toFixed(1)} kg${selectedMeasurement?.weight != null && selectedMeasurement?.body_fat_percent != null ? ` (${((((Number(selectedMeasurement.muscle_trunk)) / (1 - (Number(selectedMeasurement.fat_trunk) / 100))) * (Number(selectedMeasurement.fat_trunk) / 100)) / (Number(selectedMeasurement.weight) * Number(selectedMeasurement.body_fat_percent) / 100) * 100).toFixed(1)}%)` : ''}` : '-'}`
-                    : '-'}
+                  {(() => {
+                    const segJson = (selectedMeasurement as any)?.segment_data_json?.Paciente?.Segmentos;
+                    const seg = getSegment(segJson, 'Tronco');
+                    let gordKg = parsePtNumber(getField(seg, ['Gordura_kg', 'Gordura (kg)']));
+                    let relPct = parsePtNumber(getField(seg, ['Percentual_relativo_gordura_total', '% relativo gordura total', 'Percentual Relativo Gordura Total']));
+                    if (gordKg == null) {
+                      const m = parsePtNumber(getField(seg, ['Musculo_kg', 'Músculo_kg', 'Musculo (kg)', 'Músculo (kg)'])) ?? (selectedMeasurement?.muscle_trunk != null ? Number(selectedMeasurement.muscle_trunk) : undefined);
+                      const pctSeg = parsePtNumber(getField(seg, ['Percentual_Gordura_segmento', '% Gordura segmentar'])) ?? (selectedMeasurement?.fat_trunk != null ? Number(selectedMeasurement.fat_trunk) : undefined);
+                      if (m != null && isFinite(m) && pctSeg != null && isFinite(pctSeg)) {
+                        const denom = 1 - (pctSeg / 100);
+                        if (denom > 0) {
+                          const totalSegKg = m / denom;
+                          const calc = totalSegKg - m;
+                          gordKg = isFinite(calc) ? calc : undefined;
+                        }
+                      }
+                    }
+                    if (relPct == null) {
+                      const totalFatModel = (selectedMeasurement as any)?.segment_data_json?.Paciente?.Gordura_total_kg;
+                      const totalFatKg = totalFatModel != null ? parsePtNumber(totalFatModel) : (() => {
+                        const w = parsePtNumber((selectedMeasurement as any)?.weight);
+                        const totalFatPct = parsePtNumber((selectedMeasurement as any)?.body_fat_percent);
+                        if (w != null && totalFatPct != null && w > 0) return (w * totalFatPct) / 100;
+                        return undefined;
+                      })();
+                      if (gordKg != null && isFinite(gordKg) && totalFatKg != null && isFinite(totalFatKg) && totalFatKg > 0) {
+                        const share = (gordKg / totalFatKg) * 100;
+                        relPct = isFinite(share) ? share : undefined;
+                      }
+                    }
+                    const valStr = [
+                      gordKg != null && isFinite(gordKg) ? `${gordKg.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg` : null,
+                      relPct != null && isFinite(relPct) ? `${relPct.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%` : null,
+                    ].filter(Boolean).join(', ');
+                    return valStr || '-';
+                  })()}
                 </div>
-                <div className="text-[10px] md:text-xs font-medium text-orange-700">Classificação: {classifyFatSegmentPercent('trunk', selectedMeasurement?.fat_trunk != null ? Number(selectedMeasurement.fat_trunk) : undefined, patient?.gender)}</div>
+                <div className="text-[10px] md:text-xs font-medium text-orange-700">
+                  {(() => {
+                    const segJson = (selectedMeasurement as any)?.segment_data_json?.Paciente?.Segmentos;
+                    const seg = getSegment(segJson, 'Tronco');
+                    let relPct = parsePtNumber(getField(seg, ['Percentual_relativo_gordura_total', '% relativo gordura total', 'Percentual Relativo Gordura Total']));
+                    if (relPct == null) {
+                      const gordKg = parsePtNumber(getField(seg, ['Gordura_kg', 'Gordura (kg)']));
+                      const totalFatModel = (selectedMeasurement as any)?.segment_data_json?.Paciente?.Gordura_total_kg;
+                      const totalFatKg = totalFatModel != null ? parsePtNumber(totalFatModel) : (() => {
+                        const w = parsePtNumber((selectedMeasurement as any)?.weight);
+                        const totalFatPct = parsePtNumber((selectedMeasurement as any)?.body_fat_percent);
+                        if (w != null && totalFatPct != null && w > 0) return (w * totalFatPct) / 100;
+                        return undefined;
+                      })();
+                      if (gordKg != null && isFinite(gordKg) && totalFatKg != null && isFinite(totalFatKg) && totalFatKg > 0) {
+                        const share = (gordKg / totalFatKg) * 100;
+                        relPct = isFinite(share) ? share : undefined;
+                      }
+                    }
+                    let cls: string;
+                    if (relPct != null && isFinite(relPct)) {
+                      cls = classifyFatSegmentShare('trunk', relPct, patient?.gender);
+                    } else {
+                      const fatPctSeg = parsePtNumber(getField(seg, ['Percentual_Gordura_segmento', '% Gordura segmentar'])) ?? (selectedMeasurement?.fat_trunk != null ? Number(selectedMeasurement.fat_trunk) : undefined);
+                      const muscleSegKg = parsePtNumber(getField(seg, ['Musculo_kg', 'Músculo_kg', 'Musculo (kg)', 'Músculo (kg)'])) ?? (selectedMeasurement?.muscle_trunk != null ? Number(selectedMeasurement.muscle_trunk) : undefined);
+                      const weightKg = parsePtNumber((selectedMeasurement as any)?.weight);
+                      const totalFatPct = parsePtNumber((selectedMeasurement as any)?.body_fat_percent);
+                      cls = classifyFatSegmentPercent('trunk', fatPctSeg, muscleSegKg, weightKg, totalFatPct, patient?.gender);
+                    }
+                    return cls;
+                  })()}
+                </div>
               </div>
             </div>
           </div>
 
           {/* Card Músculo */}
           <div
-            className="relative rounded-xl border border-gray-100 shadow-lg overflow-hidden h-64"
+            className="relative rounded-xl border border-gray-100 shadow-lg overflow-hidden h-80"
             style={{
               backgroundImage: "url(/musculo.png)",
               backgroundSize: "contain",
-              backgroundPosition: "center",
+              backgroundPosition: "center 72px",
               backgroundRepeat: "no-repeat",
               backgroundColor: "#ffffff",
             }}
           >
             {/* Overlay de rótulos */}
             <div className="absolute inset-0 pointer-events-none">
+              {/* Título do Card Massa Magra (mini-card) */}
+              <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-white rounded-lg px-4 py-2 border border-[#2563eb]/30 shadow-sm text-xs md:text-sm font-semibold text-[#2563eb] text-center max-w-[90%] break-words whitespace-normal pointer-events-auto z-50">
+                <div className="flex items-center justify-center gap-2 flex-wrap">
+                  <span className="text-center break-words whitespace-normal">Análise Segmentada (Massa Magra)</span>
+                </div>
+              </div>
               {/* Top Left - Braço Esq. */}
-              <div className="absolute top-2 left-2 text-[#2563eb] text-xs md:text-sm font-semibold leading-tight max-w-[46%]">
-                <div>Músculo Braço Esq.</div>
+              <div className="absolute top-20 left-2 text-[#2563eb] text-xs md:text-sm font-semibold leading-tight max-w-[46%]">
+                <div>Massa Braço Esq.</div>
                 <div>
                   {selectedMeasurement?.muscle_arm_left != null
                     ? `${Number(selectedMeasurement.muscle_arm_left).toFixed(1)} kg${selectedMeasurement?.weight != null ? ` (${((Number(selectedMeasurement.muscle_arm_left) / Number(selectedMeasurement.weight)) * 100).toFixed(1)}%)` : ''}`
                     : '-'}
                 </div>
-                <div className="text-[10px] md:text-xs font-medium text-blue-700">Classificação: {classifyMuscleSegmentKg('arm', selectedMeasurement?.muscle_arm_left != null ? Number(selectedMeasurement.muscle_arm_left) : undefined, patient?.gender)}</div>
+                <div className="text-[10px] md:text-xs font-medium text-blue-700">{classifyMuscleSegmentKg('arm', selectedMeasurement?.muscle_arm_left != null ? Number(selectedMeasurement.muscle_arm_left) : undefined, (() => {
+                  const w = Number(selectedMeasurement?.weight ?? 0);
+                  const totalKg = ['muscle_arm_left','muscle_arm_right','muscle_leg_left','muscle_leg_right','muscle_trunk']
+                    .map((k: any) => Number((selectedMeasurement as any)[k] ?? 0))
+                    .reduce((a, b) => a + b, 0);
+                  const fallbackPercent = selectedMeasurement?.muscle_mass_percent_total != null ? Number(selectedMeasurement.muscle_mass_percent_total) : 0;
+                  return totalKg > 0 ? totalKg : (w > 0 && fallbackPercent > 0 ? (w * fallbackPercent / 100) : 0);
+                })(), selectedMeasurement?.weight != null ? Number(selectedMeasurement.weight) : undefined, patient?.gender)}</div>
               </div>
               {/* Top Right - Braço Dir. */}
-              <div className="absolute top-2 right-2 text-right text-[#2563eb] text-xs md:text-sm font-semibold leading-tight max-w-[46%]">
-                <div>Músculo Braço Dir.</div>
+              <div className="absolute top-20 right-2 text-right text-[#2563eb] text-xs md:text-sm font-semibold leading-tight max-w-[46%]">
+                <div>Massa Braço Dir.</div>
                 <div>
                   {selectedMeasurement?.muscle_arm_right != null
                     ? `${Number(selectedMeasurement.muscle_arm_right).toFixed(1)} kg${selectedMeasurement?.weight != null ? ` (${((Number(selectedMeasurement.muscle_arm_right) / Number(selectedMeasurement.weight)) * 100).toFixed(1)}%)` : ''}`
                     : '-'}
                 </div>
-                <div className="text-[10px] md:text-xs font-medium text-blue-700">Classificação: {classifyMuscleSegmentKg('arm', selectedMeasurement?.muscle_arm_right != null ? Number(selectedMeasurement.muscle_arm_right) : undefined, patient?.gender)}</div>
+                <div className="text-[10px] md:text-xs font-medium text-blue-700">{classifyMuscleSegmentKg('arm', selectedMeasurement?.muscle_arm_right != null ? Number(selectedMeasurement.muscle_arm_right) : undefined, (() => {
+                  const w = Number(selectedMeasurement?.weight ?? 0);
+                  const totalKg = ['muscle_arm_left','muscle_arm_right','muscle_leg_left','muscle_leg_right','muscle_trunk']
+                    .map((k: any) => Number((selectedMeasurement as any)[k] ?? 0))
+                    .reduce((a, b) => a + b, 0);
+                  const fallbackPercent = selectedMeasurement?.muscle_mass_percent_total != null ? Number(selectedMeasurement.muscle_mass_percent_total) : 0;
+                  return totalKg > 0 ? totalKg : (w > 0 && fallbackPercent > 0 ? (w * fallbackPercent / 100) : 0);
+                })(), selectedMeasurement?.weight != null ? Number(selectedMeasurement.weight) : undefined, patient?.gender)}</div>
               </div>
               {/* Bottom Left - Perna Esq. */}
               <div className="absolute bottom-2 left-2 text-[#2563eb] text-xs md:text-sm font-semibold leading-tight max-w-[46%]">
-                <div>Músculo Perna Esq.</div>
+                <div>Massa Perna Esq.</div>
                 <div>
                   {selectedMeasurement?.muscle_leg_left != null
                     ? `${Number(selectedMeasurement.muscle_leg_left).toFixed(1)} kg${selectedMeasurement?.weight != null ? ` (${((Number(selectedMeasurement.muscle_leg_left) / Number(selectedMeasurement.weight)) * 100).toFixed(1)}%)` : ''}`
                     : '-'}
                 </div>
-                <div className="text-[10px] md:text-xs font-medium text-blue-700">Classificação: {classifyMuscleSegmentKg('leg', selectedMeasurement?.muscle_leg_left != null ? Number(selectedMeasurement.muscle_leg_left) : undefined, patient?.gender)}</div>
+                <div className="text-[10px] md:text-xs font-medium text-blue-700">{classifyMuscleSegmentKg('leg', selectedMeasurement?.muscle_leg_left != null ? Number(selectedMeasurement.muscle_leg_left) : undefined, (() => {
+                  const w = Number(selectedMeasurement?.weight ?? 0);
+                  const totalKg = ['muscle_arm_left','muscle_arm_right','muscle_leg_left','muscle_leg_right','muscle_trunk']
+                    .map((k: any) => Number((selectedMeasurement as any)[k] ?? 0))
+                    .reduce((a, b) => a + b, 0);
+                  const fallbackPercent = selectedMeasurement?.muscle_mass_percent_total != null ? Number(selectedMeasurement.muscle_mass_percent_total) : 0;
+                  return totalKg > 0 ? totalKg : (w > 0 && fallbackPercent > 0 ? (w * fallbackPercent / 100) : 0);
+                })(), selectedMeasurement?.weight != null ? Number(selectedMeasurement.weight) : undefined, patient?.gender)}</div>
               </div>
               {/* Bottom Right - Perna Dir. */}
               <div className="absolute bottom-2 right-2 text-right text-[#2563eb] text-xs md:text-sm font-semibold leading-tight max-w-[46%]">
-                <div>Músculo Perna Dir.</div>
+                <div>Massa Perna Dir.</div>
                 <div>
                   {selectedMeasurement?.muscle_leg_right != null
                     ? `${Number(selectedMeasurement.muscle_leg_right).toFixed(1)} kg${selectedMeasurement?.weight != null ? ` (${((Number(selectedMeasurement.muscle_leg_right) / Number(selectedMeasurement.weight)) * 100).toFixed(1)}%)` : ''}`
                     : '-'}
                 </div>
-                <div className="text-[10px] md:text-xs font-medium text-blue-700">Classificação: {classifyMuscleSegmentKg('leg', selectedMeasurement?.muscle_leg_right != null ? Number(selectedMeasurement.muscle_leg_right) : undefined, patient?.gender)}</div>
+                <div className="text-[10px] md:text-xs font-medium text-blue-700">{classifyMuscleSegmentKg('leg', selectedMeasurement?.muscle_leg_right != null ? Number(selectedMeasurement.muscle_leg_right) : undefined, (() => {
+                  const w = Number(selectedMeasurement?.weight ?? 0);
+                  const totalKg = ['muscle_arm_left','muscle_arm_right','muscle_leg_left','muscle_leg_right','muscle_trunk']
+                    .map((k: any) => Number((selectedMeasurement as any)[k] ?? 0))
+                    .reduce((a, b) => a + b, 0);
+                  const fallbackPercent = selectedMeasurement?.muscle_mass_percent_total != null ? Number(selectedMeasurement.muscle_mass_percent_total) : 0;
+                  return totalKg > 0 ? totalKg : (w > 0 && fallbackPercent > 0 ? (w * fallbackPercent / 100) : 0);
+                })(), selectedMeasurement?.weight != null ? Number(selectedMeasurement.weight) : undefined, patient?.gender)}</div>
               </div>
               {/* Center - Tronco */}
-              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center text-[#2563eb] text-sm md:text-base font-semibold leading-tight">
-                <div>Músculo Tronco</div>
+              <div className="absolute left-1/2 top-[58%] -translate-x-1/2 -translate-y-1/2 text-center text-[#2563eb] text-sm md:text-base font-semibold leading-tight">
+                <div>Massa Tronco</div>
                 <div>
                   {selectedMeasurement?.muscle_trunk != null
                     ? `${Number(selectedMeasurement.muscle_trunk).toFixed(1)} kg${selectedMeasurement?.weight != null ? ` (${((Number(selectedMeasurement.muscle_trunk) / Number(selectedMeasurement.weight)) * 100).toFixed(1)}%)` : ''}`
                     : '-'}
                 </div>
-                <div className="text-[10px] md:text-xs font-medium text-blue-700">Classificação: {classifyMuscleSegmentKg('trunk', selectedMeasurement?.muscle_trunk != null ? Number(selectedMeasurement.muscle_trunk) : undefined, patient?.gender)}</div>
+                <div className="text-[10px] md:text-xs font-medium text-blue-700">{classifyMuscleSegmentKg('trunk', selectedMeasurement?.muscle_trunk != null ? Number(selectedMeasurement.muscle_trunk) : undefined, (() => {
+                  const w = Number(selectedMeasurement?.weight ?? 0);
+                  const totalKg = ['muscle_arm_left','muscle_arm_right','muscle_leg_left','muscle_leg_right','muscle_trunk']
+                    .map((k: any) => Number((selectedMeasurement as any)[k] ?? 0))
+                    .reduce((a, b) => a + b, 0);
+                  const fallbackPercent = selectedMeasurement?.muscle_mass_percent_total != null ? Number(selectedMeasurement.muscle_mass_percent_total) : 0;
+                  return totalKg > 0 ? totalKg : (w > 0 && fallbackPercent > 0 ? (w * fallbackPercent / 100) : 0);
+                })(), selectedMeasurement?.weight != null ? Number(selectedMeasurement.weight) : undefined, patient?.gender)}</div>
               </div>
             </div>
-          </div>
         </div>
+      </div>
+
+      
+
+      {/* Observações do modelo (segment_data_json) */}
+      {(() => {
+        const obs = (selectedMeasurement as any)?.segment_data_json?.Paciente?.Observacoes;
+        if (!obs || !Array.isArray(obs) || obs.length === 0) return null;
+        return (
+          <div className="bg-white rounded-xl p-4 shadow-lg border border-gray-100 mt-4">
+            <h3 className="text-base font-semibold text-gray-700 mb-2">Observações do modelo</h3>
+            <ul className="list-disc pl-5 text-xs text-gray-700 space-y-1">
+              {obs.map((o: any, i: number) => (
+                <li key={i}>{String(o)}</li>
+              ))}
+            </ul>
+          </div>
+        );
+      })()}
 
         {/* Métricas de Risco e Saúde Avançadas */}
         {(() => {
@@ -1057,47 +1640,28 @@ const PatientProfile = () => {
                 {/* Gráfico de Gorduras */}
                 <div className="flex-1 min-w-0">
                   <h3 className="text-base font-semibold text-orange-600 mb-2 text-center">Comparação de Gorduras</h3>
-                  <ResponsiveContainer width="100%" height={320}>
-                    <BarChart
-                      data={(() => {
-                        const m1 = selectedCompareIndex1 >= 0 ? scaleMeasurements[selectedCompareIndex1] : null;
-                        const m2 = selectedCompareIndex2 >= 0 ? scaleMeasurements[selectedCompareIndex2] : null;
-                        if (!m1 || !m2) return [];
-                        return [
-                          {
-                            name: 'Gordura Total',
-                            data1: Number(m1.weight) * Number(m1.body_fat_percent) / 100,
-                            data2: Number(m2.weight) * Number(m2.body_fat_percent) / 100,
-                          },
-                          {
-                            name: 'Braço Direito',
-                            data1: Number(m1.weight) * Number(m1.fat_arm_right) / 100,
-                            data2: Number(m2.weight) * Number(m2.fat_arm_right) / 100,
-                          },
-                          {
-                            name: 'Braço Esquerdo',
-                            data1: Number(m1.weight) * Number(m1.fat_arm_left) / 100,
-                            data2: Number(m2.weight) * Number(m2.fat_arm_left) / 100,
-                          },
-                          {
-                            name: 'Perna Direita',
-                            data1: Number(m1.weight) * Number(m1.fat_leg_right) / 100,
-                            data2: Number(m2.weight) * Number(m2.fat_leg_right) / 100,
-                          },
-                          {
-                            name: 'Perna Esquerda',
-                            data1: Number(m1.weight) * Number(m1.fat_leg_left) / 100,
-                            data2: Number(m2.weight) * Number(m2.fat_leg_left) / 100,
-                          },
-                          {
-                            name: 'Tronco',
-                            data1: Number(m1.weight) * Number(m1.fat_trunk) / 100,
-                            data2: Number(m2.weight) * Number(m2.fat_trunk) / 100,
-                          },
-                        ];
-                      })()}
-                      margin={{ top: 16, right: 24, left: 0, bottom: 8 }}
-                    >
+                          <ResponsiveContainer width="100%" height={320}>
+                            <BarChart
+                              data={(() => {
+                                const m1 = selectedCompareIndex1 >= 0 ? scaleMeasurements[selectedCompareIndex1] : null;
+                                const m2 = selectedCompareIndex2 >= 0 ? scaleMeasurements[selectedCompareIndex2] : null;
+                                if (!m1 || !m2) return [];
+                                return [
+                                  {
+                                    name: 'Gordura Total',
+                                    data1: (() => {
+                                      const j1 = (m1 as any)?.segment_data_json?.Paciente?.Gordura_total_kg;
+                                      return j1 != null ? Number(j1) : (Number(m1.weight) * Number(m1.body_fat_percent) / 100);
+                                    })(),
+                                    data2: (() => {
+                                      const j2 = (m2 as any)?.segment_data_json?.Paciente?.Gordura_total_kg;
+                                      return j2 != null ? Number(j2) : (Number(m2.weight) * Number(m2.body_fat_percent) / 100);
+                                    })(),
+                                  }
+                                ];
+                              })()}
+                              margin={{ top: 16, right: 24, left: 0, bottom: 8 }}
+                            >
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="name" interval={0} angle={-30} textAnchor="end" height={80} />
                       <YAxis />

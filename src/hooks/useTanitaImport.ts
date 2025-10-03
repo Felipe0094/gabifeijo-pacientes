@@ -49,6 +49,22 @@ export const useTanitaImport = () => {
   const [importedData, setImportedData] = useState<TanitaPatientData[]>([]);
   const { toast } = useToast();
 
+  // Helper para converter strings numéricas que podem vir com vírgula decimal (pt-BR)
+  const toNumber = (raw: string): number => {
+    if (raw == null) return NaN;
+    const cleaned = raw.replace(/"/g, '').trim();
+    // Substitui vírgula por ponto para parseFloat funcionar corretamente
+    return parseFloat(cleaned.replace(',', '.'));
+  };
+
+  // Helper para inteiros (remove caracteres não numéricos)
+  const toInt = (raw: string): number => {
+    if (raw == null) return NaN;
+    const cleaned = raw.replace(/"/g, '').trim();
+    const onlyDigits = cleaned.replace(/[^0-9-]/g, '');
+    return parseInt(onlyDigits, 10);
+  };
+
   const parseProfileData = (csvContent: string, slot: number): TanitaProfile | null => {
     try {
       const lines = csvContent.trim().split('\n');
@@ -72,16 +88,16 @@ export const useTanitaImport = () => {
             profile.dataNascimento = value.replace(/"/g, '');
             break;
           case 'GE': // Gênero
-            profile.genero = parseInt(value);
+            profile.genero = toInt(value);
             break;
           case 'Hm': // Altura
-            profile.altura = parseFloat(value);
+            profile.altura = toNumber(value);
             break;
           case 'AL': // Nível de atividade
-            profile.atividade = parseInt(value);
+            profile.atividade = toInt(value);
             break;
           case 'Bt': // Modo atleta
-            profile.modoAtleta = parseInt(value) === 1;
+            profile.modoAtleta = toInt(value) === 1;
             break;
           case 'CS': // Código do perfil
             codigoPerfil = value;
@@ -115,79 +131,79 @@ export const useTanitaImport = () => {
         let date = '';
         let time = '';
 
-        // Parse dos campos conforme formato Tanita
-        for (let i = 0; i < fields.length; i += 2) {
-          const key = fields[i];
-          const value = fields[i + 1];
-          
-          if (!key || !value) continue;
+      // Parse dos campos conforme formato Tanita
+      for (let i = 0; i < fields.length; i += 2) {
+        const key = fields[i];
+        const value = fields[i + 1];
+        
+        if (!key || !value) continue;
 
-          switch (key) {
-            case 'DT': // Data
-              date = value.replace(/"/g, '');
-              break;
-            case 'Ti': // Hora
-              time = value.replace(/"/g, '');
-              break;
-            case 'Wk': // Peso
-              measurement.peso = parseFloat(value);
-              break;
-            case 'MI': // IMC
-              measurement.imc = parseFloat(value);
-              break;
-            case 'FW': // Gordura total %
-              measurement.gorduraTotal = parseFloat(value);
-              break;
-            case 'ww': // Água total %
-              measurement.aguaTotal = parseFloat(value);
-              break;
-            case 'mW': // Massa muscular total %
-              measurement.massaMuscularTotal = parseFloat(value);
-              break;
-            case 'bW': // Massa óssea kg
-              measurement.massaOssea = parseFloat(value);
-              break;
-            case 'IF': // Gordura visceral
-              measurement.gorduraVisceral = parseInt(value);
-              break;
-            case 'rA': // Idade metabólica
-              measurement.idadeMetabolica = parseInt(value);
-              break;
-            case 'rD': // Consumo diário
-              measurement.consumoDiario = parseInt(value);
-              break;
-            case 'Fr': // Gordura braço direito
-              measurement.gorduraBracoDireito = parseFloat(value);
-              break;
-            case 'Fl': // Gordura braço esquerdo
-              measurement.gorduraBracoEsquerdo = parseFloat(value);
-              break;
-            case 'FR': // Gordura perna direita
-              measurement.gorduraPernadireita = parseFloat(value);
-              break;
-            case 'FL': // Gordura perna esquerda
-              measurement.gorduraPernaEsquerda = parseFloat(value);
-              break;
-            case 'FT': // Gordura tronco
-              measurement.gorduraTronco = parseFloat(value);
-              break;
-            case 'mr': // Músculo braço direito
-              measurement.musculoBracoDireito = parseFloat(value);
-              break;
-            case 'ml': // Músculo braço esquerdo
-              measurement.musculoBracoEsquerdo = parseFloat(value);
-              break;
-            case 'mR': // Músculo perna direita
-              measurement.musculoPernaDireita = parseFloat(value);
-              break;
-            case 'mL': // Músculo perna esquerda
-              measurement.musculoPernaEsquerda = parseFloat(value);
-              break;
-            case 'mT': // Músculo tronco
-              measurement.musculoTronco = parseFloat(value);
-              break;
-          }
+        switch (key) {
+          case 'DT': // Data
+            date = value.replace(/"/g, '');
+            break;
+          case 'Ti': // Hora
+            time = value.replace(/"/g, '');
+            break;
+          case 'Wk': // Peso
+            measurement.peso = toNumber(value);
+            break;
+          case 'MI': // IMC
+            measurement.imc = toNumber(value);
+            break;
+          case 'FW': // Gordura total %
+            measurement.gorduraTotal = toNumber(value);
+            break;
+          case 'ww': // Água total %
+            measurement.aguaTotal = toNumber(value);
+            break;
+          case 'mW': // Massa muscular total %
+            measurement.massaMuscularTotal = toNumber(value);
+            break;
+          case 'bW': // Massa óssea kg
+            measurement.massaOssea = toNumber(value);
+            break;
+          case 'IF': // Gordura visceral
+            measurement.gorduraVisceral = toInt(value);
+            break;
+          case 'rA': // Idade metabólica
+            measurement.idadeMetabolica = toInt(value);
+            break;
+          case 'rD': // Consumo diário
+            measurement.consumoDiario = toInt(value);
+            break;
+          case 'Fr': // Gordura braço direito
+            measurement.gorduraBracoDireito = toNumber(value);
+            break;
+          case 'Fl': // Gordura braço esquerdo
+            measurement.gorduraBracoEsquerdo = toNumber(value);
+            break;
+          case 'FR': // Gordura perna direita
+            measurement.gorduraPernadireita = toNumber(value);
+            break;
+          case 'FL': // Gordura perna esquerda
+            measurement.gorduraPernaEsquerda = toNumber(value);
+            break;
+          case 'FT': // Gordura tronco
+            measurement.gorduraTronco = toNumber(value);
+            break;
+          case 'mr': // Músculo braço direito
+            measurement.musculoBracoDireito = toNumber(value);
+            break;
+          case 'ml': // Músculo braço esquerdo
+            measurement.musculoBracoEsquerdo = toNumber(value);
+            break;
+          case 'mR': // Músculo perna direita
+            measurement.musculoPernaDireita = toNumber(value);
+            break;
+          case 'mL': // Músculo perna esquerda
+            measurement.musculoPernaEsquerda = toNumber(value);
+            break;
+          case 'mT': // Músculo tronco
+            measurement.musculoTronco = toNumber(value);
+            break;
         }
+      }
 
         if (date && time && measurement.peso) {
           measurement.timestamp = `${date} ${time}`;

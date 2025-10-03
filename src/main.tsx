@@ -4,8 +4,8 @@ import './index.css'
 
 createRoot(document.getElementById("root")!).render(<App />);
 
-// Register service worker for PWA functionality
-if ('serviceWorker' in navigator) {
+// Registra o Service Worker apenas em produção para não interferir no HMR do Vite
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
       .then((registration) => {
@@ -15,4 +15,11 @@ if ('serviceWorker' in navigator) {
         console.log('SW registration failed: ', registrationError);
       });
   });
+} else {
+  // Em desenvolvimento, garante que nenhum SW antigo esteja ativo
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(regs => {
+      regs.forEach(r => r.unregister());
+    }).catch(() => {});
+  }
 }
