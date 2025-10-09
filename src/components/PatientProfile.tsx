@@ -10,6 +10,7 @@ import ProfilePhotoUploader from './ProfilePhotoUploader';
 import BodyPhotoUploader from './BodyPhotoUploader';
 import BodyPhotoGallery from './BodyPhotoGallery';
 import MeasurementForm from './MeasurementForm';
+import BloodTestsCard from './ui/BloodTestsCard';
 import PatientTimeline from './PatientTimeline';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
@@ -1567,206 +1568,7 @@ const PatientProfile = () => {
             </div>
           )}
           {/* Gráfico de barras verticais simples para comparar última e penúltima medição */}
-          {scaleMeasurements.length > 1 && (
-            <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100 mt-6">
-              <h2 className="text-lg font-semibold text-gray-800 mb-4">Comparação de Gorduras e Músculos (kg)</h2>
-                            {/* Seletor de datas para comparação */}
-              <div className="w-full flex flex-col items-center my-4">
-                <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-                  <p className="text-sm text-blue-800 text-center">
-                    Selecione 2 datas para comparar. Clique em uma data para selecionar/deselecionar.
-                  </p>
-                </div>
-
-                <div className="w-full -mx-4 px-4 overflow-x-auto pb-2">
-                  <div className="flex flex-row items-center gap-3 pr-4 snap-x snap-mandatory">
-                  {scaleMeasurements.map((m, idx) => (
-                    <button
-                      key={m.id + '-compare'}
-                      className={`flex flex-col items-center focus:outline-none transition-colors ${
-                        selectedCompareIndex1 === idx ? 'text-[#fdba74] font-bold' : 
-                        selectedCompareIndex2 === idx ? 'text-[#a78bfa] font-bold' : 
-                        'text-gray-600 hover:text-gray-800'
-                      }`}
-                      onClick={() => {
-                        // Seleção livre: alterna entre as duas seleções
-                        if (selectedCompareIndex1 === idx) {
-                          setSelectedCompareIndex1(-1); // Deseleciona
-                        } else if (selectedCompareIndex2 === idx) {
-                          setSelectedCompareIndex2(-1); // Deseleciona
-                        } else if (selectedCompareIndex1 === -1) {
-                          setSelectedCompareIndex1(idx);
-                        } else if (selectedCompareIndex2 === -1) {
-                          setSelectedCompareIndex2(idx);
-                        } else {
-                          // Se ambas estão selecionadas, substitui a primeira
-                          setSelectedCompareIndex1(idx);
-                        }
-                      }}
-                      onContextMenu={e => {
-                        e.preventDefault();
-                        // Clique direito também seleciona
-                        if (selectedCompareIndex1 === idx) {
-                          setSelectedCompareIndex1(-1);
-                        } else if (selectedCompareIndex2 === idx) {
-                          setSelectedCompareIndex2(-1);
-                        } else if (selectedCompareIndex1 === -1) {
-                          setSelectedCompareIndex1(idx);
-                        } else if (selectedCompareIndex2 === -1) {
-                          setSelectedCompareIndex2(idx);
-                        } else {
-                          setSelectedCompareIndex2(idx);
-                        }
-                      }}
-                    >
-                      <div className={`w-4 h-4 rounded-full mb-1 border-2 transition-colors
-                        ${selectedCompareIndex1 === idx ? 'bg-[#FFDAC3] border-[#FFDAC3]' :
-                          selectedCompareIndex2 === idx ? 'bg-[#a4d7f1] border-[#a4d7f1]' :
-                          'bg-gray-300 border-gray-400 hover:border-gray-500'}`}></div>
-                      <span className="text-xs whitespace-nowrap">{m.timestamp ? new Date(m.timestamp).toLocaleDateString('pt-BR') : '-'}</span>
-                    </button>
-                  ))}
-                  </div>
-                </div>
-                <div className="w-full h-px bg-gray-200 mt-1" />
-                <div className="text-xs text-gray-500 mt-1 text-center">
-                  <span className="mr-2"><span className="inline-block w-3 h-3 rounded-full bg-[#FFDAC3] border border-[#FFDAC3] align-middle mr-1"></span>1ª Seleção</span>
-                  <span><span className="inline-block w-3 h-3 rounded-full bg-[#a4d7f1] border border-[#a4d7f1] align-middle mr-1"></span>2ª Seleção</span>
-                </div>
-              </div>
-              {/* Gráficos lado a lado */}
-              {selectedCompareIndex1 >= 0 && selectedCompareIndex2 >= 0 ? (
-                <div className="flex flex-col md:flex-row gap-8 w-full">
-                {/* Gráfico de Gorduras */}
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-base font-semibold text-orange-600 mb-2 text-center">Comparação de Gorduras</h3>
-                          <ResponsiveContainer width="100%" height={320}>
-                            <BarChart
-                              data={(() => {
-                                const m1 = selectedCompareIndex1 >= 0 ? scaleMeasurements[selectedCompareIndex1] : null;
-                                const m2 = selectedCompareIndex2 >= 0 ? scaleMeasurements[selectedCompareIndex2] : null;
-                                if (!m1 || !m2) return [];
-                                return [
-                                  {
-                                    name: 'Gordura Total',
-                                    data1: (() => {
-                                      const j1 = (m1 as any)?.segment_data_json?.Paciente?.Gordura_total_kg;
-                                      return j1 != null ? Number(j1) : (Number(m1.weight) * Number(m1.body_fat_percent) / 100);
-                                    })(),
-                                    data2: (() => {
-                                      const j2 = (m2 as any)?.segment_data_json?.Paciente?.Gordura_total_kg;
-                                      return j2 != null ? Number(j2) : (Number(m2.weight) * Number(m2.body_fat_percent) / 100);
-                                    })(),
-                                  }
-                                ];
-                              })()}
-                              margin={{ top: 16, right: 24, left: 0, bottom: 8 }}
-                            >
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" interval={0} angle={-30} textAnchor="end" height={80} />
-                      <YAxis />
-                      <Tooltip content={({ active, payload, label }) => {
-                        if (!active || !payload || payload.length < 2) return null;
-                        const data1 = Number(payload.find(p => p.dataKey === 'data1')?.value ?? 0);
-                        const data2 = Number(payload.find(p => p.dataKey === 'data2')?.value ?? 0);
-                        const diff = data1 - data2;
-                        const m1 = selectedCompareIndex1 >= 0 ? scaleMeasurements[selectedCompareIndex1] : null;
-                        const m2 = selectedCompareIndex2 >= 0 ? scaleMeasurements[selectedCompareIndex2] : null;
-                        const date1 = m1?.timestamp ? new Date(m1.timestamp).toLocaleDateString('pt-BR') : '';
-                        const date2 = m2?.timestamp ? new Date(m2.timestamp).toLocaleDateString('pt-BR') : '';
-                        return (
-                          <div className="bg-white p-2 rounded shadow text-xs">
-                            <div className="font-bold mb-1">{label}</div>
-                            <div>{date1}: <span className="font-mono">{data1.toFixed(1)} kg</span></div>
-                            <div>{date2}: <span className="font-mono">{data2.toFixed(1)} kg</span></div>
-                            <div>Diferença: <span className={diff > 0 ? 'text-red-600 font-bold' : diff < 0 ? 'text-green-600 font-bold' : ''}>{diff > 0 ? '+' : ''}{diff.toFixed(1)} kg</span></div>
-                          </div>
-                        );
-                      }} />
-                      <Bar dataKey="data2" name="2ª Data" fill="#a4d7f1" barSize={32} isAnimationActive={false} />
-                      <Bar dataKey="data1" name="1ª Data" fill="#FFDAC3" barSize={32} isAnimationActive={false} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-                {/* Gráfico de Músculos */}
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-base font-semibold text-[#2563ee] mb-2 text-center">Comparação de Músculos</h3>
-                  <ResponsiveContainer width="100%" height={320}>
-                    <BarChart
-                      data={(() => {
-                        const m1 = selectedCompareIndex1 >= 0 ? scaleMeasurements[selectedCompareIndex1] : null;
-                        const m2 = selectedCompareIndex2 >= 0 ? scaleMeasurements[selectedCompareIndex2] : null;
-                        if (!m1 || !m2) return [];
-                        return [
-                          {
-                            name: 'Músculo Total',
-                            data1: Number(m1.weight) * Number(m1.muscle_mass_percent_total) / 100,
-                            data2: Number(m2.weight) * Number(m2.muscle_mass_percent_total) / 100,
-                          },
-                          {
-                            name: 'Braço Direito',
-                            data1: Number(m1.weight) * Number(m1.muscle_arm_right) / 100,
-                            data2: Number(m2.weight) * Number(m2.muscle_arm_right) / 100,
-                          },
-                          {
-                            name: 'Braço Esquerdo',
-                            data1: Number(m1.weight) * Number(m1.muscle_arm_left) / 100,
-                            data2: Number(m2.weight) * Number(m2.muscle_arm_left) / 100,
-                          },
-                          {
-                            name: 'Perna Direita',
-                            data1: Number(m1.weight) * Number(m1.muscle_leg_right) / 100,
-                            data2: Number(m2.weight) * Number(m2.muscle_leg_right) / 100,
-                          },
-                          {
-                            name: 'Perna Esquerda',
-                            data1: Number(m1.weight) * Number(m1.muscle_leg_left) / 100,
-                            data2: Number(m2.weight) * Number(m2.muscle_leg_left) / 100,
-                          },
-                          {
-                            name: 'Tronco',
-                            data1: Number(m1.weight) * Number(m1.muscle_trunk) / 100,
-                            data2: Number(m2.weight) * Number(m2.muscle_trunk) / 100,
-                          },
-                        ];
-                      })()}
-                      margin={{ top: 16, right: 24, left: 0, bottom: 8 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" interval={0} angle={-30} textAnchor="end" height={80} />
-                      <YAxis />
-                      <Tooltip content={({ active, payload, label }) => {
-                        if (!active || !payload || payload.length < 2) return null;
-                        const data1 = Number(payload.find(p => p.dataKey === 'data1')?.value ?? 0);
-                        const data2 = Number(payload.find(p => p.dataKey === 'data2')?.value ?? 0);
-                        const diff = data1 - data2;
-                        const m1 = selectedCompareIndex1 >= 0 ? scaleMeasurements[selectedCompareIndex1] : null;
-                        const m2 = selectedCompareIndex2 >= 0 ? scaleMeasurements[selectedCompareIndex2] : null;
-                        const date1 = m1?.timestamp ? new Date(m1.timestamp).toLocaleDateString('pt-BR') : '';
-                        const date2 = m2?.timestamp ? new Date(m2.timestamp).toLocaleDateString('pt-BR') : '';
-                        return (
-                          <div className="bg-white p-2 rounded shadow text-xs">
-                            <div className="font-bold mb-1">{label}</div>
-                            <div>{date1}: <span className="font-mono">{data1.toFixed(1)} kg</span></div>
-                            <div>{date2}: <span className="font-mono">{data2.toFixed(1)} kg</span></div>
-                            <div>Diferença: <span className={diff > 0 ? 'text-green-600 font-bold' : diff < 0 ? 'text-red-600 font-bold' : ''}>{diff > 0 ? '+' : ''}{diff.toFixed(1)} kg</span></div>
-                          </div>
-                        );
-                      }} />
-                      <Bar dataKey="data2" name="2ª Data" fill="#a4d7f1" barSize={32} isAnimationActive={false} />
-                      <Bar dataKey="data1" name="1ª Data" fill="#FFDAC3" barSize={32} isAnimationActive={false} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <p className="text-lg mb-2">Selecione duas datas para comparar</p>
-                  <p className="text-sm">Use o seletor acima para escolher quais medições comparar</p>
-                </div>
-              )}
-            </div>
-          )}
+          {/* Seção de comparação de Gorduras e Músculos (kg) removida conforme solicitação */}
       {/* Body Photos Section */}
       <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
         {/* Modal do uploader */}
@@ -1834,6 +1636,17 @@ const PatientProfile = () => {
       </div>
 
       {/* Blood Tests */}
+      <BloodTestsCard
+        bloodTests={bloodTests}
+        bloodTestsLoading={bloodTestsLoading}
+        bloodTestsError={bloodTestsError}
+        onNew={() => setShowBloodTestForm(true)}
+        onEdit={(test) => { setEditingBloodTest(test); setShowBloodTestForm(true); }}
+        onDelete={(id) => handleDeleteBloodTest(id)}
+      />
+
+      {/* Blood Tests (legacy) */}
+      {false && (
       <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
         <div className="flex items-center justify-between mb-4">
           <div className="flex flex-col md:flex-row md:items-center md:space-x-4">
@@ -1953,6 +1766,12 @@ const PatientProfile = () => {
                       <div className="bg-gray-50 p-2 rounded">
                         <div className="text-xs text-gray-500">Triglicerídeos</div>
                         <div className="font-medium">{test.triglycerides} mg/dL</div>
+                      </div>
+                    )}
+                    {test.vldl && (
+                      <div className="bg-gray-50 p-2 rounded">
+                        <div className="text-xs text-gray-500">VLDL</div>
+                        <div className="font-medium">{test.vldl} mg/dL</div>
                       </div>
                     )}
                     {test.apolipoprotein_a && (
@@ -2077,6 +1896,48 @@ const PatientProfile = () => {
                         <div className="font-medium">{test.albumin} g/dL</div>
                       </div>
                     )}
+                    {test.bilirubin_total && (
+                      <div className="bg-gray-50 p-2 rounded">
+                        <div className="text-xs text-gray-500">Bilirrubina Total</div>
+                        <div className="font-medium">{test.bilirubin_total} mg/dL</div>
+                      </div>
+                    )}
+                    {test.bilirubin_direct && (
+                      <div className="bg-gray-50 p-2 rounded">
+                        <div className="text-xs text-gray-500">Bilirrubina Direta</div>
+                        <div className="font-medium">{test.bilirubin_direct} mg/dL</div>
+                      </div>
+                    )}
+                    {test.bilirubin_indirect && (
+                      <div className="bg-gray-50 p-2 rounded">
+                        <div className="text-xs text-gray-500">Bilirrubina Indireta</div>
+                        <div className="font-medium">{test.bilirubin_indirect} mg/dL</div>
+                      </div>
+                    )}
+                    {test.alkaline_phosphatase && (
+                      <div className="bg-gray-50 p-2 rounded">
+                        <div className="text-xs text-gray-500">Fosfatase Alcalina</div>
+                        <div className="font-medium">{test.alkaline_phosphatase} U/L</div>
+                      </div>
+                    )}
+                    {test.ggt && (
+                      <div className="bg-gray-50 p-2 rounded">
+                        <div className="text-xs text-gray-500">GGT</div>
+                        <div className="font-medium">{test.ggt} U/L</div>
+                      </div>
+                    )}
+                    {test.ldh && (
+                      <div className="bg-gray-50 p-2 rounded">
+                        <div className="text-xs text-gray-500">LDH</div>
+                        <div className="font-medium">{test.ldh} U/L</div>
+                      </div>
+                    )}
+                    {test.c_reactive_protein && (
+                      <div className="bg-gray-50 p-2 rounded">
+                        <div className="text-xs text-gray-500">Proteína C Reativa</div>
+                        <div className="font-medium">{test.c_reactive_protein} mg/L</div>
+                      </div>
+                    )}
                     
                     {/* Eletrólitos */}
                     {test.sodium && (
@@ -2123,6 +1984,24 @@ const PatientProfile = () => {
                         <div className="font-medium">{test.homocysteine} μmol/L</div>
                       </div>
                     )}
+                    {test.folate && (
+                      <div className="bg-gray-50 p-2 rounded">
+                        <div className="text-xs text-gray-500">Folato</div>
+                        <div className="font-medium">{test.folate} ng/mL</div>
+                      </div>
+                    )}
+                    {test.ferritin && (
+                      <div className="bg-gray-50 p-2 rounded">
+                        <div className="text-xs text-gray-500">Ferritina</div>
+                        <div className="font-medium">{test.ferritin} ng/mL</div>
+                      </div>
+                    )}
+                    {test.uric_acid && (
+                      <div className="bg-gray-50 p-2 rounded">
+                        <div className="text-xs text-gray-500">Ácido Úrico</div>
+                        <div className="font-medium">{test.uric_acid} mg/dL</div>
+                      </div>
+                    )}
                   </div>
                   
                   {test.notes && (
@@ -2138,6 +2017,7 @@ const PatientProfile = () => {
           </div>
         </div>
       </div>
+      )}
 
       {/* Add/Edit Manual Measurement Form Modal */}
       {showManualForm && (
@@ -2209,6 +2089,20 @@ const PatientProfile = () => {
                 red_blood_cells: formData.get('red_blood_cells') ? Number(formData.get('red_blood_cells')) : null,
                 white_blood_cells: formData.get('white_blood_cells') ? Number(formData.get('white_blood_cells')) : null,
                 platelets: formData.get('platelets') ? Number(formData.get('platelets')) : null,
+                // Índices Hematimétricos
+                vch: formData.get('vch') ? Number(formData.get('vch')) : null,
+                hcm: formData.get('hcm') ? Number(formData.get('hcm')) : null,
+                chcm: formData.get('chcm') ? Number(formData.get('chcm')) : null,
+                rdw: formData.get('rdw') ? Number(formData.get('rdw')) : null,
+                // Diferencial de Leucócitos (%)
+                basophils_percent: formData.get('basophils_percent') ? Number(formData.get('basophils_percent')) : null,
+                eosinophils_percent: formData.get('eosinophils_percent') ? Number(formData.get('eosinophils_percent')) : null,
+                myelocytes_percent: formData.get('myelocytes_percent') ? Number(formData.get('myelocytes_percent')) : null,
+                metamyelocytes_percent: formData.get('metamyelocytes_percent') ? Number(formData.get('metamyelocytes_percent')) : null,
+                bands_percent: formData.get('bands_percent') ? Number(formData.get('bands_percent')) : null,
+                segmented_neutrophils_percent: formData.get('segmented_neutrophils_percent') ? Number(formData.get('segmented_neutrophils_percent')) : null,
+                lymphocytes_percent: formData.get('lymphocytes_percent') ? Number(formData.get('lymphocytes_percent')) : null,
+                monocytes_percent: formData.get('monocytes_percent') ? Number(formData.get('monocytes_percent')) : null,
                 // Hormônios
                 testosterone_total: formData.get('testosterone_total') ? Number(formData.get('testosterone_total')) : null,
                 testosterone_free: formData.get('testosterone_free') ? Number(formData.get('testosterone_free')) : null,
@@ -2216,16 +2110,26 @@ const PatientProfile = () => {
                 tsh: formData.get('tsh') ? Number(formData.get('tsh')) : null,
                 t3: formData.get('t3') ? Number(formData.get('t3')) : null,
                 t4: formData.get('t4') ? Number(formData.get('t4')) : null,
+                t4_free: formData.get('t4_free') ? Number(formData.get('t4_free')) : null,
+                estradiol: formData.get('estradiol') ? Number(formData.get('estradiol')) : null,
+                // PSA
+                psa_total: formData.get('psa_total') ? Number(formData.get('psa_total')) : null,
+                psa_free: formData.get('psa_free') ? Number(formData.get('psa_free')) : null,
+                psa_ratio: formData.get('psa_ratio') ? Number(formData.get('psa_ratio')) : null,
                 // Lipidograma
                 cholesterol_total: formData.get('cholesterol_total') ? Number(formData.get('cholesterol_total')) : null,
                 hdl: formData.get('hdl') ? Number(formData.get('hdl')) : null,
                 ldl: formData.get('ldl') ? Number(formData.get('ldl')) : null,
                 triglycerides: formData.get('triglycerides') ? Number(formData.get('triglycerides')) : null,
+                vldl: formData.get('vldl') ? Number(formData.get('vldl')) : null,
                 apolipoprotein_a: formData.get('apolipoprotein_a') ? Number(formData.get('apolipoprotein_a')) : null,
                 apolipoprotein_b: formData.get('apolipoprotein_b') ? Number(formData.get('apolipoprotein_b')) : null,
-                // Vitaminas
+                // Vitaminas e Metabolismo
                 vitamin_d: formData.get('vitamin_d') ? Number(formData.get('vitamin_d')) : null,
                 vitamin_b12: formData.get('vitamin_b12') ? Number(formData.get('vitamin_b12')) : null,
+                folate: formData.get('folate') ? Number(formData.get('folate')) : null,
+                ferritin: formData.get('ferritin') ? Number(formData.get('ferritin')) : null,
+                uric_acid: formData.get('uric_acid') ? Number(formData.get('uric_acid')) : null,
                 homocysteine: formData.get('homocysteine') ? Number(formData.get('homocysteine')) : null,
                 // Função Renal
                 creatinine: formData.get('creatinine') ? Number(formData.get('creatinine')) : null,
@@ -2235,15 +2139,24 @@ const PatientProfile = () => {
                 tgp_alt: formData.get('tgp_alt') ? Number(formData.get('tgp_alt')) : null,
                 total_protein: formData.get('total_protein') ? Number(formData.get('total_protein')) : null,
                 albumin: formData.get('albumin') ? Number(formData.get('albumin')) : null,
+                bilirubin_total: formData.get('bilirubin_total') ? Number(formData.get('bilirubin_total')) : null,
+                bilirubin_direct: formData.get('bilirubin_direct') ? Number(formData.get('bilirubin_direct')) : null,
+                bilirubin_indirect: formData.get('bilirubin_indirect') ? Number(formData.get('bilirubin_indirect')) : null,
+                alkaline_phosphatase: formData.get('alkaline_phosphatase') ? Number(formData.get('alkaline_phosphatase')) : null,
+                ggt: formData.get('ggt') ? Number(formData.get('ggt')) : null,
+                ldh: formData.get('ldh') ? Number(formData.get('ldh')) : null,
                 // Eletrólitos
                 sodium: formData.get('sodium') ? Number(formData.get('sodium')) : null,
                 potassium: formData.get('potassium') ? Number(formData.get('potassium')) : null,
                 magnesium: formData.get('magnesium') ? Number(formData.get('magnesium')) : null,
                 phosphorus: formData.get('phosphorus') ? Number(formData.get('phosphorus')) : null,
                 // Glicemia
+                glucose: formData.get('glucose') ? Number(formData.get('glucose')) : null,
                 fasting_glucose: formData.get('fasting_glucose') ? Number(formData.get('fasting_glucose')) : null,
                 hba1c: formData.get('hba1c') ? Number(formData.get('hba1c')) : null,
                 fasting_insulin: formData.get('fasting_insulin') ? Number(formData.get('fasting_insulin')) : null,
+                // Inflamação
+                c_reactive_protein: formData.get('c_reactive_protein') ? Number(formData.get('c_reactive_protein')) : null,
                 // Observações
                 notes: formData.get('notes') as string || null
               };
@@ -2352,6 +2265,96 @@ const PatientProfile = () => {
                 </div>
               </div>
 
+              {/* Índices Hematimétricos */}
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b border-gray-200 pb-2">Índices Hematimétricos</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">VCM (fL)</label>
+                    <input
+                      type="number"
+                      name="vch"
+                      step="0.1"
+                      defaultValue={editingBloodTest?.vch || ''}
+                      placeholder="80-100"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">HCM (pg)</label>
+                    <input
+                      type="number"
+                      name="hcm"
+                      step="0.1"
+                      defaultValue={editingBloodTest?.hcm || ''}
+                      placeholder="27-33"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">CHCM (g/dL)</label>
+                    <input
+                      type="number"
+                      name="chcm"
+                      step="0.1"
+                      defaultValue={editingBloodTest?.chcm || ''}
+                      placeholder="32-36"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">RDW (%)</label>
+                    <input
+                      type="number"
+                      name="rdw"
+                      step="0.1"
+                      defaultValue={editingBloodTest?.rdw || ''}
+                      placeholder="11-15"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Diferencial de Leucócitos (%) */}
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b border-gray-200 pb-2">Diferencial de Leucócitos (%)</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Basófilos (%)</label>
+                    <input type="number" name="basophils_percent" step="0.1" defaultValue={editingBloodTest?.basophils_percent || ''} placeholder="0-1" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Eosinófilos (%)</label>
+                    <input type="number" name="eosinophils_percent" step="0.1" defaultValue={editingBloodTest?.eosinophils_percent || ''} placeholder="0-6" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Mielócitos (%)</label>
+                    <input type="number" name="myelocytes_percent" step="0.1" defaultValue={editingBloodTest?.myelocytes_percent || ''} placeholder="0" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Metamielócitos (%)</label>
+                    <input type="number" name="metamyelocytes_percent" step="0.1" defaultValue={editingBloodTest?.metamyelocytes_percent || ''} placeholder="0" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Bastonetes (%)</label>
+                    <input type="number" name="bands_percent" step="0.1" defaultValue={editingBloodTest?.bands_percent || ''} placeholder="0-5" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Neutrófilos Segmentados (%)</label>
+                    <input type="number" name="segmented_neutrophils_percent" step="0.1" defaultValue={editingBloodTest?.segmented_neutrophils_percent || ''} placeholder="40-70" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Linfócitos (%)</label>
+                    <input type="number" name="lymphocytes_percent" step="0.1" defaultValue={editingBloodTest?.lymphocytes_percent || ''} placeholder="20-40" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Monócitos (%)</label>
+                    <input type="number" name="monocytes_percent" step="0.1" defaultValue={editingBloodTest?.monocytes_percent || ''} placeholder="2-8" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500" />
+                  </div>
+                </div>
+              </div>
+
               {/* Hormônios */}
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b border-gray-200 pb-2">Hormônios</h3>
@@ -2422,6 +2425,47 @@ const PatientProfile = () => {
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
                     />
                   </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">T4 Livre (ng/dL)</label>
+                    <input
+                      type="number"
+                      name="t4_free"
+                      step="0.01"
+                      defaultValue={editingBloodTest?.t4_free || ''}
+                      placeholder="0.8-1.8"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Estradiol (pg/mL)</label>
+                    <input
+                      type="number"
+                      name="estradiol"
+                      step="0.1"
+                      defaultValue={editingBloodTest?.estradiol || ''}
+                      placeholder="10-40"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* PSA */}
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b border-gray-200 pb-2">PSA</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">PSA Total (ng/mL)</label>
+                    <input type="number" name="psa_total" step="0.01" defaultValue={editingBloodTest?.psa_total || ''} placeholder="0-4" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">PSA Livre (ng/mL)</label>
+                    <input type="number" name="psa_free" step="0.01" defaultValue={editingBloodTest?.psa_free || ''} placeholder="" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Relação PSA Livre/Total (%)</label>
+                    <input type="number" name="psa_ratio" step="0.1" defaultValue={editingBloodTest?.psa_ratio || ''} placeholder="" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500" />
+                  </div>
                 </div>
               </div>
 
@@ -2470,6 +2514,17 @@ const PatientProfile = () => {
                       step="0.1"
                       defaultValue={editingBloodTest?.triglycerides || ''}
                       placeholder="< 150"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">VLDL (mg/dL)</label>
+                    <input
+                      type="number"
+                      name="vldl"
+                      step="0.1"
+                      defaultValue={editingBloodTest?.vldl || ''}
+                      placeholder="5-40"
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
                     />
                   </div>
@@ -2532,6 +2587,39 @@ const PatientProfile = () => {
                       step="0.1"
                       defaultValue={editingBloodTest?.homocysteine || ''}
                       placeholder="5-15"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Folato (ng/mL)</label>
+                    <input
+                      type="number"
+                      name="folate"
+                      step="0.1"
+                      defaultValue={editingBloodTest?.folate || ''}
+                      placeholder="3-20"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Ferritina (ng/mL)</label>
+                    <input
+                      type="number"
+                      name="ferritin"
+                      step="0.1"
+                      defaultValue={editingBloodTest?.ferritin || ''}
+                      placeholder="30-400"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Ácido Úrico (mg/dL)</label>
+                    <input
+                      type="number"
+                      name="uric_acid"
+                      step="0.1"
+                      defaultValue={editingBloodTest?.uric_acid || ''}
+                      placeholder="3.5-7.2"
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
                     />
                   </div>
@@ -2615,6 +2703,72 @@ const PatientProfile = () => {
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
                     />
                   </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Bilirrubina Total (mg/dL)</label>
+                    <input
+                      type="number"
+                      name="bilirubin_total"
+                      step="0.01"
+                      defaultValue={editingBloodTest?.bilirubin_total || ''}
+                      placeholder="0.1-1.2"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Bilirrubina Direta (mg/dL)</label>
+                    <input
+                      type="number"
+                      name="bilirubin_direct"
+                      step="0.01"
+                      defaultValue={editingBloodTest?.bilirubin_direct || ''}
+                      placeholder="0-0.3"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text sm font-medium text-gray-700 mb-1">Bilirrubina Indireta (mg/dL)</label>
+                    <input
+                      type="number"
+                      name="bilirubin_indirect"
+                      step="0.01"
+                      defaultValue={editingBloodTest?.bilirubin_indirect || ''}
+                      placeholder="0.2-0.9"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Fosfatase Alcalina (U/L)</label>
+                    <input
+                      type="number"
+                      name="alkaline_phosphatase"
+                      step="0.1"
+                      defaultValue={editingBloodTest?.alkaline_phosphatase || ''}
+                      placeholder="44-147"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">GGT (U/L)</label>
+                    <input
+                      type="number"
+                      name="ggt"
+                      step="0.1"
+                      defaultValue={editingBloodTest?.ggt || ''}
+                      placeholder="9-48"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">LDH (U/L)</label>
+                    <input
+                      type="number"
+                      name="ldh"
+                      step="0.1"
+                      defaultValue={editingBloodTest?.ldh || ''}
+                      placeholder="140-280"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -2663,6 +2817,24 @@ const PatientProfile = () => {
                       step="0.1"
                       defaultValue={editingBloodTest?.phosphorus || ''}
                       placeholder="2.7-4.5"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Inflamação */}
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b border-gray-200 pb-2">Inflamação</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Proteína C Reativa (mg/L)</label>
+                    <input
+                      type="number"
+                      name="c_reactive_protein"
+                      step="0.1"
+                      defaultValue={editingBloodTest?.c_reactive_protein || ''}
+                      placeholder="< 3"
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
                     />
                   </div>
