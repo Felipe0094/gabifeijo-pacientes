@@ -12,6 +12,20 @@ export interface BloodTest {
   red_blood_cells?: number | null;
   white_blood_cells?: number | null;
   platelets?: number | null;
+  // Índices Hematimétricos
+  vch?: number | null;
+  hcm?: number | null;
+  chcm?: number | null;
+  rdw?: number | null;
+  // Diferencial de Leucócitos (%)
+  basophils_percent?: number | null;
+  eosinophils_percent?: number | null;
+  myelocytes_percent?: number | null;
+  metamyelocytes_percent?: number | null;
+  bands_percent?: number | null;
+  segmented_neutrophils_percent?: number | null;
+  lymphocytes_percent?: number | null;
+  monocytes_percent?: number | null;
   // Hormônios
   testosterone_total?: number | null;
   testosterone_free?: number | null;
@@ -19,6 +33,12 @@ export interface BloodTest {
   tsh?: number | null;
   t3?: number | null;
   t4?: number | null;
+  t4_free?: number | null;
+  estradiol?: number | null;
+  // PSA
+  psa_total?: number | null;
+  psa_free?: number | null;
+  psa_ratio?: number | null;
   // Lipidograma
   cholesterol_total?: number | null;
   hdl?: number | null;
@@ -26,10 +46,14 @@ export interface BloodTest {
   triglycerides?: number | null;
   apolipoprotein_a?: number | null;
   apolipoprotein_b?: number | null;
+  vldl?: number | null;
   // Vitaminas e Metabolismo
   vitamin_d?: number | null;
   vitamin_b12?: number | null;
   homocysteine?: number | null;
+  folate?: number | null;
+  ferritin?: number | null;
+  uric_acid?: number | null;
   // Função Renal
   creatinine?: number | null;
   urea?: number | null;
@@ -38,6 +62,13 @@ export interface BloodTest {
   tgp_alt?: number | null;
   total_protein?: number | null;
   albumin?: number | null;
+  bilirubin_total?: number | null;
+  bilirubin_direct?: number | null;
+  bilirubin_indirect?: number | null;
+  alkaline_phosphatase?: number | null;
+  ggt?: number | null;
+  ldh?: number | null;
+  c_reactive_protein?: number | null;
   // Eletrólitos
   sodium?: number | null;
   potassium?: number | null;
